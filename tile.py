@@ -31,13 +31,33 @@ class Tile:
             self.EAST = tmp
             angle -= 90
 
+#─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼
+
     def __str__(self):
-        path = ("N" if self.NORTH else "")
-        path = path + ("E" if self.EAST else "")
-        path = path + ("S" if self.SOUTH else "")
-        path = path + ("W" if self.WEST else "")
-        return "Tile(path=\"{}\",can_move={},token=\"{}\")".format(
-            path, self.can_move, self.token)
+        token = (self.token if self.token else "")
+        token = token.ljust(15) if len(token) > 5 else token.center(15)
+
+        path = "┌" if self.can_move else "⬤"
+        path = path + ("┐     ┌" if self.NORTH else "───────")
+        path = path + ("┐\n" if self.can_move else "⬤\n")
+
+        path = path + ("└" if self.WEST else "│")
+        path = path + " %s " % token[:5]
+        path = path + ("┘\n" if self.EAST else "│\n")
+
+        path = path + (" " if self.WEST else "│")
+        path = path + " %s " % token[5:10]
+        path = path + (" \n" if self.EAST else "│\n")
+
+        path = path + ("┌" if self.WEST else "│")
+        path = path + " %s " % token[10:15]
+        path = path + ("┐\n" if self.EAST else "│\n")
+
+        path = path + ("└" if self.can_move else "⬤")
+        path = path + ("┘     └" if self.SOUTH else "───────")
+        path = path + ("┘" if self.can_move else "⬤")
+
+        return path
 
     __repr__ = __str__
 

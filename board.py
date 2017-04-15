@@ -148,6 +148,20 @@ class GameBoard:
             print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
 
+    def __str__(self):
+        def tile_to_lines(tile):
+            return tile.__str__().split("\n")
+        output = ""
+
+        for row in self._board:
+            tile_lines = map(tile_to_lines, row)
+            board_line = [" ".join(t) for t in list(zip(*list(tile_lines)))]
+            output = output + "\n".join(board_line) + "\n"
+
+        return output[:-1]
+
+    __repr__ = __str__
+
 def slide_tiles(gameboard, direction):
     assert(gameboard.last_slide is None or gameboard.last_slide != direction)
     TileMovement.is_valid(direction)
@@ -165,7 +179,7 @@ def slide_tiles(gameboard, direction):
             # Move tiles down
             column = [floating_tile] + column
             new_board.floating_tile = column[len(column) - 1]
-            column = column[:len(column) - 1]
+            column = column[:-1]
         elif edge == TileMovement.B:
             # Move tiles up
             column.add(floating_tile)
@@ -182,7 +196,7 @@ def slide_tiles(gameboard, direction):
             #Move tiles right
             row = [floating_tile] + row
             new_board.floating_tile = row[len(row) - 1]
-            new_board._board[offset] = row[:len(row) - 1]
+            new_board._board[offset] = row[:-1]
         elif edge == TileMovement.R:
             # Move tiles left
             row.add(floating_tile)
