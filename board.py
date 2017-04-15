@@ -1,69 +1,17 @@
 #!/usr/bin/env python
 import random
+from tile import *
+from player import all_player_strings
 
-all_player_strings = set(["red", "blue", "green", "yellow"])
-
-all_element_strings = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
+all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "dragonfly", "gold", "keys", "gem", "lizard", "helmet",
                            "princess", "book", "crown", "treasure", "candlestick",
                            "ghost", "spider", "owl", "map", "ring", "man", "bat"])
 
-class Tile:
-    def __init__(self, rotation=0):
-        self.NORTH = False
-        self.EAST = False
-        self.SOUTH = False
-        self.WEST = False
-        self.element = None
-        self.can_move = True
-        self.rotate(rotation)
-
-    def rotate(self, angle=90):
-        # angle is clockwise and must be a multiple of 90 degrees
-        angle = int(angle) % 360
-        assert(angle in [0, 90, 180, 270])
-        assert(angle == 0 or self.can_move)
-        while angle > 0:
-            tmp = self.NORTH
-            self.NORTH = self.WEST
-            self.WEST = self.SOUTH
-            self.SOUTH = self.EAST
-            self.EAST = tmp
-            angle -= 90
-
-    def __str__(self):
-        path = ("N" if self.NORTH else "")
-        path = path + ("E" if self.EAST else "")
-        path = path + ("S" if self.SOUTH else "")
-        path = path + ("W" if self.WEST else "")
-        return "Tile(path=\"{}\",can_move={},element=\"{}\")".format(
-            path, self.can_move, self.element)
-
-    __repr__ = __str__
-
-class CornerTile(Tile):
-    def __init__(self, rotation=0):
-        Tile.__init__(self, rotation)
-        self.NORTH = True
-        self.EAST = True
-
-class StraightTile(Tile):
-    def __init__(self, rotation=0):
-        Tile.__init__(self, rotation)
-        self.EAST = True
-        self.WEST = True
-
-class TriTile(Tile):
-    def __init__(self, rotation=0):
-        Tile.__init__(self, rotation)
-        self.EAST = True
-        self.NORTH = True
-        self.WEST = True
-
 class GameBoard:
     def __init__(self, dynamic_placement=None):
-        def static_tile(tile, rotation=0, element=None):
-            tile.element = element
+        def static_tile(tile, rotation=0, token=None):
+            tile.token = token
             tile.rotate(rotation)
             tile.can_move = False
             return tile
@@ -100,11 +48,11 @@ class GameBoard:
         self._board[4][4] = static_tile(TriTile(), 270, "treasure")
 
         # Create set of dynamic tiles
-        dynamic_tiles = list(create_dynamic_tiles(CornerTile, 16,
+        dynamic_tiles = list(batch_create_tiles(CornerTile, 16,
                         ["scarab", "beetle", "rat", "dragonfly", "spider", "owl"]).union(
-                            create_dynamic_tiles(TriTile, 6,
+                            batch_create_tiles(TriTile, 6,
                             ["genie", "lizard", "princess", "ghost", "man", "bat"])).union(
-                                create_dynamic_tiles(StraightTile, 12, [])
+                                batch_create_tiles(StraightTile, 12, [])
                                 ))
         random.shuffle(list(dynamic_tiles))
         for tile in dynamic_tiles:
@@ -114,6 +62,10 @@ class GameBoard:
                 assert(0 <= x < 7 and 0 <= y < 7)
                 assert(not self._board[y][x])
                 self._board[y][x] = tile
+            elif not hasattr(self, "floating_tile"):
+                self.floating_tile = tile
+            else:
+                assert(False) # For some reason we have 2 (or more) tiles floating
 
     def iterate(self):
         i = 0
@@ -123,33 +75,27 @@ class GameBoard:
                 yield (x, y, tile)
 
     def is_valid(self):
-        # Some assertions to try an make sure the board makes sense
-        found_elements = set()
+        """Some assertions to try an make sure the board makes sense"""
+
+        # Check that we have a floating tile
+        assert(hasattr(self, "floating_tile"))
+        found_tokens = set()
+        if self.floating_tile.token:
+            found_tokens.add(self.floating_tile.token)
+
+        # Check that there are no duplicate tokens on the board
         for x, y, tile in self.iterate():
-            if tile and tile.element:
-                if tile.element in found_elements:
-                    print("There are at least two {} elements (one is at {}, {})".format(tile.element, x, y))
+            if tile and tile.token:
+                if tile.token in found_tokens:
+                    print("There are at least two {} tokens (one is at {}, {})".format(tile.token, x, y))
                     assert(False)
                 else:
-                    found_elements.add(tile.element)
-        everything = all_element_strings.union(set(p + " base" for p in all_player_strings))
-        missing_elements = everything - found_elements
-        incorrect_elements = found_elements - everything
-        if not(len(missing_elements) == 0 and len(incorrect_elements) == 0):
-            print("Missing: {}\nInvalid: {}".format(missing_elements, incorrect_elements))
+                    found_tokens.add(tile.token)
+
+        # Check all tokens are valid
+        everything = all_tokens.union(set(p + " base" for p in all_player_strings))
+        missing_tokens = everything - found_tokens
+        incorrect_tokens = found_tokens - everything
+        if not(len(missing_tokens) == 0 and len(incorrect_tokens) == 0):
+            print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
-
-def create_dynamic_tiles(tile_type, number, elements=[]):
-    output = set()
-    assert(len(elements) <= number) # Check that no elements would be missed
-    for i in range(number):
-        tile = tile_type()
-        if i < len(elements):
-            tile.element = elements[i]
-        output.add(tile)
-    return output
-
-if __name__ == '__main__':
-    gameboard = GameBoard()
-    gameboard.is_valid()
-    print("Done")
