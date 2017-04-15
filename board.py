@@ -1,12 +1,22 @@
 #!/usr/bin/env python
 import random
+from itertools import product
+
 from tile import *
-from player import all_player_strings
+from player import all_player_colours
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "dragonfly", "gold", "keys", "gem", "lizard", "helmet",
                            "princess", "book", "crown", "treasure", "candlestick",
                            "ghost", "spider", "owl", "map", "ring", "man", "bat"])
+
+class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
+    # WARNING: Chaning these values will break the offset in the slide_tiles function
+    T = 0 # Top
+    M = 1 # Middle
+    B = 2 # Bottom
+    L = -3 # Left
+    R = 4 # Right
 
 class GameBoard:
     def __init__(self, dynamic_placement=None):
@@ -64,6 +74,7 @@ class GameBoard:
                 self._board[y][x] = tile
             elif not hasattr(self, "floating_tile"):
                 self.floating_tile = tile
+                self.last_slide = None
             else:
                 assert(False) # For some reason we have 2 (or more) tiles floating
 
@@ -93,9 +104,36 @@ class GameBoard:
                     found_tokens.add(tile.token)
 
         # Check all tokens are valid
-        everything = all_tokens.union(set(p + " base" for p in all_player_strings))
+        everything = all_tokens.union(set(p + " base" for p in all_player_colours))
         missing_tokens = everything - found_tokens
         incorrect_tokens = found_tokens - everything
         if not(len(missing_tokens) == 0 and len(incorrect_tokens) == 0):
             print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
+
+    def slide_tiles(self, direction):
+        assert(self.last_slide is None or self.last_slideS != direction)
+        edge, row = direction
+        if edge == TileMovement.T:
+            assert(row in [TileMovement.L, TileMovement.M, TileMovement.R])
+            offset = ((edge - 1) / 2) + 2
+            #TODO: Move tiles down
+
+        elif edge == TileMovement.L:
+            assert(row in [TileMovement.T, TileMovement.M, TileMovement.B])
+            offset = (edge * 2) + 1
+            #TODO: Move tiles right
+
+        elif edge == TileMovement.B:
+            assert(row in [TileMovement.L, TileMovement.M, TileMovement.R])
+            offset = ((edge - 1) / 2) + 2
+            # TODO: Move tiles up
+
+        elif edge == TileMovement.R:
+            assert(row in [TileMovement.T, TileMovement.M, TileMovement.B])
+            offset = (edge * 2) + 1
+            # TODO: Move tiles left
+
+        else:
+            assert(False) # Invalid edge
+        self.last_slide = direction # Need to invert direction
