@@ -5,6 +5,7 @@ from itertools import product
 
 from tile import *
 from player import all_player_colours
+from labyrinth import RuleSet
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "dragonfly", "gold", "keys", "gem", "lizard", "helmet",
@@ -46,7 +47,7 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
 
 
 class GameBoard:
-    def __init__(self, dynamic_placement=None):
+    def __init__(self, ruleset, dynamic_placement=None):
         def static_tile(tile, rotation=0, token=None):
             tile.token = token
             tile.rotate(rotation)
@@ -60,6 +61,7 @@ class GameBoard:
             dynamic_placement = random_placement
 
         # Create an empty board
+        self.ruleset = ruleset
         self._board = [[None for x in range(7)] for y in range(7)]
 
         # Add in the player bases
@@ -162,13 +164,14 @@ class GameBoard:
 
     __repr__ = __str__
 
-def slide_tiles(gameboard, direction):
+def slide_tiles(gameboard, direction, orientation):
     assert(gameboard.last_slide is None or gameboard.last_slide != direction)
     TileMovement.is_valid(direction)
 
     # Create new board to apply slide to
     new_board = gameboard.clone()
     floating_tile = new_board.floating_tile
+    floating_tile.rotate(orientation)
 
     edge, row = direction
     if edge == TileMovement.T:
