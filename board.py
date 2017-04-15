@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import copy
 import random
 from itertools import product
 
@@ -18,6 +19,32 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
     L = -3 # Left
     R = 4 # Right
 
+    @classmethod
+    def is_valid(cls, direction):
+        edge, row = direction
+        assert(edge in [cls.T, cls.B, cls.L, cls.R])
+        if edge == cls.T or edge == cls.B:
+            assert(row in [cls.L, cls.M, cls.R])
+        elif edge == L or edge == cls.R:
+            assert(row in [cls.T, cls.M, cls.B])
+        else:
+            assert(False)
+
+    @classmethod
+    def invert(cls, direction):
+        cls.is_valid(direction)
+        edge, row = direction
+        if edge == cls.T:
+            edge = cls.B
+        elif edge == cls.B:
+            edge = cls.T
+        elif edge == cls.L:
+            edge = cls.R
+        elif edge == cls.R:
+            edge = cls.L
+        return (edge, row)
+
+
 class GameBoard:
     def __init__(self, dynamic_placement=None):
         def static_tile(tile, rotation=0, token=None):
@@ -27,7 +54,7 @@ class GameBoard:
             return tile
 
         def random_placement(empty_coords, tile):
-            return random.choice(empty_coords)
+            return (random.choice(empty_coords), random.choice([0, 90, 180, 270]))
 
         if dynamic_placement is None:
             dynamic_placement = random_placement
@@ -64,13 +91,14 @@ class GameBoard:
                             ["genie", "lizard", "princess", "ghost", "man", "bat"])).union(
                                 batch_create_tiles(StraightTile, 12, [])
                                 ))
-        random.shuffle(list(dynamic_tiles))
+        random.shuffle(dynamic_tiles)
         for tile in dynamic_tiles:
             empty_coords = [(x, y) for x, y, t in self.iterate() if not t]
             if empty_coords != []:
-                x, y = dynamic_placement(empty_coords, tile)
-                assert(0 <= x < 7 and 0 <= y < 7)
+                (x, y), theta = dynamic_placement(empty_coords, tile)
+                assert(0 <= x < 7 and 0 <= y < 7 and theta in [0, 90, 180, 270])
                 assert(not self._board[y][x])
+                tile.rotate(theta)
                 self._board[y][x] = tile
             elif not hasattr(self, "floating_tile"):
                 self.floating_tile = tile
@@ -85,23 +113,32 @@ class GameBoard:
             for x, tile in enumerate(row):
                 yield (x, y, tile)
 
+    def clone(self):
+        new_board = copy.deepcopy(self)
+        return new_board
+
     def is_valid(self):
         """Some assertions to try an make sure the board makes sense"""
 
         # Check that we have a floating tile
         assert(hasattr(self, "floating_tile"))
         found_tokens = set()
+        found_ids = set([self.floating_tile.id])
         if self.floating_tile.token:
             found_tokens.add(self.floating_tile.token)
 
-        # Check that there are no duplicate tokens on the board
         for x, y, tile in self.iterate():
-            if tile and tile.token:
-                if tile.token in found_tokens:
-                    print("There are at least two {} tokens (one is at {}, {})".format(tile.token, x, y))
-                    assert(False)
-                else:
-                    found_tokens.add(tile.token)
+            # Check all tiles have unique ids
+            assert(tile.id not in found_ids)
+            found_ids.add(tile.id)
+
+            # Check that there are no duplicate tokens on the board
+            if tile.token:
+                assert(tile.token not in found_tokens)
+                found_tokens.add(tile.token)
+
+        # Check that we have all the tiles we are supposed to
+        assert(found_ids == set([i for i in range(50)]))
 
         # Check all tokens are valid
         everything = all_tokens.union(set(p + " base" for p in all_player_colours))
@@ -111,29 +148,49 @@ class GameBoard:
             print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
 
-    def slide_tiles(self, direction):
-        assert(self.last_slide is None or self.last_slideS != direction)
-        edge, row = direction
+def slide_tiles(gameboard, direction):
+    assert(gameboard.last_slide is None or gameboard.last_slide != direction)
+    TileMovement.is_valid(direction)
+
+    # Create new board to apply slide to
+    new_board = gameboard.clone()
+    floating_tile = new_board.floating_tile
+
+    edge, row = direction
+    if edge == TileMovement.T:
+        offset = (edge * 2) + 1
+        # Create a temporary column for easy shifting
+        column = [t for x, y, t in new_board.iterate() if x == offset]
         if edge == TileMovement.T:
-            assert(row in [TileMovement.L, TileMovement.M, TileMovement.R])
-            offset = ((edge - 1) / 2) + 2
-            #TODO: Move tiles down
-
-        elif edge == TileMovement.L:
-            assert(row in [TileMovement.T, TileMovement.M, TileMovement.B])
-            offset = (edge * 2) + 1
-            #TODO: Move tiles right
-
+            # Move tiles down
+            column = [floating_tile] + column
+            new_board.floating_tile = column[len(column) - 1]
+            column = column[:len(column) - 1]
         elif edge == TileMovement.B:
-            assert(row in [TileMovement.L, TileMovement.M, TileMovement.R])
-            offset = ((edge - 1) / 2) + 2
-            # TODO: Move tiles up
+            # Move tiles up
+            column.add(floating_tile)
+            new_board.floating_tile = column[0]
+            column = column[1:]
+        # Put temporary column back into board representation
+        for y in range(7):
+            new_board._board[y][offset] = column[y]
 
+    elif edge == TileMovement.L or edge == TileMovement.R:
+        offset = ((edge - 1) / 2) + 2
+        row = new_board._board[offset]
+        if edge == TileMovement.L:
+            #Move tiles right
+            row = [floating_tile] + row
+            new_board.floating_tile = row[len(row) - 1]
+            new_board._board[offset] = row[:len(row) - 1]
         elif edge == TileMovement.R:
-            assert(row in [TileMovement.T, TileMovement.M, TileMovement.B])
-            offset = (edge * 2) + 1
-            # TODO: Move tiles left
+            # Move tiles left
+            row.add(floating_tile)
+            new_board.floating_tile = row[0]
+            new_board._board[offset] = row[1:]
 
-        else:
-            assert(False) # Invalid edge
-        self.last_slide = direction # Need to invert direction
+    else:
+        assert(False) # Invalid edge
+    new_board.last_slide = TileMovement.invert(direction)
+    new_board.is_valid() # Check the changes haven't broken the board
+    return new_board

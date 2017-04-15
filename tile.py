@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
+global tile_id
+tile_id = 0
+
 class Tile:
     def __init__(self, rotation=0):
+        global tile_id
+        # Unique ID for each tile
+        self.id = tile_id
+        tile_id += 1
+
         self.NORTH = False
         self.EAST = False
         self.SOUTH = False
