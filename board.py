@@ -12,40 +12,6 @@ all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "princess", "book", "crown", "treasure", "candlestick",
                            "ghost", "spider", "owl", "map", "ring", "man", "bat"])
 
-class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
-    # WARNING: Chaning these values will break the offset in the slide_tiles function
-    T = 0 # Top
-    M = 1 # Middle
-    B = 2 # Bottom
-    L = -3 # Left
-    R = 4 # Right
-
-    @classmethod
-    def is_valid(cls, direction):
-        edge, row = direction
-        assert(edge in [cls.T, cls.B, cls.L, cls.R])
-        if edge == cls.T or edge == cls.B:
-            assert(row in [cls.L, cls.M, cls.R])
-        elif edge == L or edge == cls.R:
-            assert(row in [cls.T, cls.M, cls.B])
-        else:
-            assert(False)
-
-    @classmethod
-    def invert(cls, direction):
-        cls.is_valid(direction)
-        edge, row = direction
-        if edge == cls.T:
-            edge = cls.B
-        elif edge == cls.B:
-            edge = cls.T
-        elif edge == cls.L:
-            edge = cls.R
-        elif edge == cls.R:
-            edge = cls.L
-        return (edge, row)
-
-
 class GameBoard:
     def __init__(self, players=[], dynamic_placement=None):
         def static_tile(tile, rotation=0, token=None):
@@ -110,14 +76,14 @@ class GameBoard:
         # Add all the players to the board
         self.players = []
         for player in players:
-            for x, y, tile in self._board.iterate():
+            for x, y, tile in self.iterate():
                 if tile and tile.token == player.colour + " base":
                     player.home_x = x
                     player.home_y = y
                     player.x = x
                     player.y = y
                     break
-            self.players.add(player)
+            self.players.append(player)
 
     def iterate(self):
         i = 0
