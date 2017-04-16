@@ -3,16 +3,11 @@
 all_player_colours = set(["red", "blue", "green", "yellow"])
 
 class Player:
-    def __init__(self, colour, gameboard, cards=[]):
+    def __init__(self, colour, cards=[]):
         self.colour = colour
-        self._board = gameboard
-        for x, y, tile in self._board.iterate():
-            if tile and tile.token == colour + " base":
-                self.home_x = x
-                self.home_y = y
-                break
-        # Assert that this Player has a base on the GameBoard
-        assert(hasattr(self, 'home_x') and hasattr(self, 'home_y'))
-        self.x = self.home_x
-        self.y = self.home_y
-        self.cards = cards
+
+    def decide_move(self, gameboard):
+        assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
+
+        # Return chosen move
+        return None

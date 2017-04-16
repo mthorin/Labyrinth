@@ -31,8 +31,6 @@ class Tile:
             self.EAST = tmp
             angle -= 90
 
-#─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼
-
     def __str__(self):
         token = (self.token if self.token else "")
         token = token.ljust(15) if len(token) > 5 else token.center(15)

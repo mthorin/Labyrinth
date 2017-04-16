@@ -4,7 +4,7 @@ import random
 from itertools import product
 
 from tile import *
-from player import all_player_colours
+from player import all_player_colours, Player
 from labyrinth import RuleSet
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
@@ -47,7 +47,7 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
 
 
 class GameBoard:
-    def __init__(self, ruleset, dynamic_placement=None):
+    def __init__(self, players=[], dynamic_placement=None):
         def static_tile(tile, rotation=0, token=None):
             tile.token = token
             tile.rotate(rotation)
@@ -61,7 +61,6 @@ class GameBoard:
             dynamic_placement = random_placement
 
         # Create an empty board
-        self.ruleset = ruleset
         self._board = [[None for x in range(7)] for y in range(7)]
 
         # Add in the player bases
@@ -107,6 +106,18 @@ class GameBoard:
                 self.last_slide = None
             else:
                 assert(False) # For some reason we have 2 (or more) tiles floating
+
+        # Add all the players to the board
+        self.players = []
+        for player in players:
+            for x, y, tile in self._board.iterate():
+                if tile and tile.token == player.colour + " base":
+                    player.home_x = x
+                    player.home_y = y
+                    player.x = x
+                    player.y = y
+                    break
+            self.players.add(player)
 
     def iterate(self):
         i = 0
@@ -163,51 +174,3 @@ class GameBoard:
         return output[:-1]
 
     __repr__ = __str__
-
-def slide_tiles(gameboard, direction, orientation):
-    assert(gameboard.last_slide is None or gameboard.last_slide != direction)
-    TileMovement.is_valid(direction)
-
-    # Create new board to apply slide to
-    new_board = gameboard.clone()
-    floating_tile = new_board.floating_tile
-    floating_tile.rotate(orientation)
-
-    edge, row = direction
-    if edge == TileMovement.T:
-        offset = (edge * 2) + 1
-        # Create a temporary column for easy shifting
-        column = [t for x, y, t in new_board.iterate() if x == offset]
-        if edge == TileMovement.T:
-            # Move tiles down
-            column = [floating_tile] + column
-            new_board.floating_tile = column[len(column) - 1]
-            column = column[:-1]
-        elif edge == TileMovement.B:
-            # Move tiles up
-            column.add(floating_tile)
-            new_board.floating_tile = column[0]
-            column = column[1:]
-        # Put temporary column back into board representation
-        for y in range(7):
-            new_board._board[y][offset] = column[y]
-
-    elif edge == TileMovement.L or edge == TileMovement.R:
-        offset = ((edge - 1) / 2) + 2
-        row = new_board._board[offset]
-        if edge == TileMovement.L:
-            #Move tiles right
-            row = [floating_tile] + row
-            new_board.floating_tile = row[len(row) - 1]
-            new_board._board[offset] = row[:-1]
-        elif edge == TileMovement.R:
-            # Move tiles left
-            row.add(floating_tile)
-            new_board.floating_tile = row[0]
-            new_board._board[offset] = row[1:]
-
-    else:
-        assert(False) # Invalid edge
-    new_board.last_slide = TileMovement.invert(direction)
-    new_board.is_valid() # Check the changes haven't broken the board
-    return new_board
