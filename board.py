@@ -132,6 +132,12 @@ class GameBoard:
             return tile.__str__().split("\n")
         output = ""
 
+        for x, y, tile in self.iterate():
+            tile._colour = None
+
+        for player in self.players:
+            self._board[player.y][player.x]._colour = player.colour
+
         for row in self._board:
             tile_lines = map(tile_to_lines, row)
             board_line = [" ".join(t) for t in list(zip(*list(tile_lines)))]

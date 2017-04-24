@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from tile import TileMovement
-
+from colours import colourise
 
 all_player_colours = ["red", "blue", "green", "yellow"]
 
@@ -19,9 +19,9 @@ class Player:
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
         # TODO: Choose a better move
-        return (TileMovement.T, TileMovement.L), 90, [PlayerMovement.UP]
+        return (TileMovement.T, TileMovement.L), 90, [PlayerMovement.DOWN]
 
     def __str__(self):
-        return "{}({},{},{})".format(self.colour,self.x,self.y,self.cards)
+        return colourise(self.colour, "{}({},{},{})".format(self.colour,self.x,self.y,self.cards))
 
     __repr__ = __str__
