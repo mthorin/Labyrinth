@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from colours import colourise
+import math
 
 global tile_id
 tile_id = 0
@@ -46,7 +47,7 @@ class Tile:
         tile_id += 1
 
         # Colour the tile should be when printing
-        self._colour = None
+        self._colours = []
 
         self.NORTH = False
         self.EAST = False
@@ -93,7 +94,13 @@ class Tile:
         path = path + ("┘     └" if self.SOUTH else "───────")
         path = path + ("┘" if self.can_move else "⬤")
 
-        return colourise(self._colour, path)
+        if self._colours:
+            gap = math.ceil(len(path) / len(self._colours))
+            split_path = [path[i*gap:(i+1)*gap] for i in range(len(self._colours))]
+            for i, c in enumerate(self._colours):
+                split_path[i] = colourise(c, split_path[i])
+            path = "".join(split_path)
+        return path
 
     __repr__ = __str__
 

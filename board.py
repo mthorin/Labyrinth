@@ -133,10 +133,10 @@ class GameBoard:
         output = ""
 
         for x, y, tile in self.iterate():
-            tile._colour = None
+            tile._colours = []
 
         for player in self.players:
-            self._board[player.y][player.x]._colour = player.colour
+            self._board[player.y][player.x]._colours.append(player.colour)
 
         for row in self._board:
             tile_lines = map(tile_to_lines, row)
