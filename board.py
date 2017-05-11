@@ -141,13 +141,13 @@ class GameBoard:
         floating_tile.rotate(orientation)
 
         edge, row = direction
-        print(direction)
         if edge == TileMovement.T or edge == TileMovement.B:
             offset = 1 if row == TileMovement.L else (
                      3 if row == TileMovement.M else 5)
 
             # Create a temporary column for easy shifting
             column = [t for x, y, t in new_board.iterate() if x == offset]
+
             if edge == TileMovement.T:
                 # Move tiles down
                 column = [floating_tile] + column
@@ -158,9 +158,16 @@ class GameBoard:
                 column.append(floating_tile)
                 new_board.floating_tile = column[0]
                 column = column[1:]
+
             # Put temporary column back into board representation
             for y in range(7):
                 new_board._board[y][offset] = column[y]
+
+            # Move any players that are affected
+            for p in new_board.players:
+                if p.x == offset:
+                    ydir = (1 if edge == TileMovement.T else -1)
+                    p.y = (p.y + ydir) % 7
 
         elif edge == TileMovement.L or edge == TileMovement.R:
             offset = (row * 2) + 1
@@ -177,6 +184,12 @@ class GameBoard:
                 new_board.floating_tile = row[0]
                 new_board._board[offset] = row[1:]
 
+            # Move any players that are affected
+            for p in new_board.players:
+                if p.y == offset:
+                    xdir = (1 if edge == TileMovement.L else -1)
+                    p.x = (p.x + xdir) % 7
+
         else:
             print(edge)
             assert(False) # Invalid edge
@@ -190,17 +203,22 @@ class GameBoard:
             return tile.__str__().split("\n")
         output = ""
 
+        # Reset all tile colours
+        self.floating_tile._colours = []
         for x, y, tile in self.iterate():
             tile._colours = []
 
+        # Add the players colour to the tile they are on
         for player in self.players:
             self._board[player.y][player.x]._colours.append(player.colour)
 
+        # Print the tiles as a grid
         for row in self._board:
             tile_lines = map(tile_to_lines, row)
             board_line = [" ".join(t) for t in list(zip(*list(tile_lines)))]
             output = output + "\n".join(board_line) + "\n"
 
+        # Return output with the last newline removed
         return output[:-1]
 
     __repr__ = __str__

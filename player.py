@@ -66,7 +66,9 @@ class Player:
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
+        return self.random_move(gameboard)
 
+    def random_move(self, gameboard):
         # Slide the tile in a random direction and orientation
         orientation = random.choice([0, 90, 180, 270])
         direction = gameboard.last_slide
