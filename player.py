@@ -48,21 +48,21 @@ class PlayerMovement:
         else:
             assert(False) # Invalid step
 
-        return True # TODO: Fix tokens below, and then remove this
-
         # See if player picks up token
         token = next_tile.token
         if token in player.cards:
             player.cards.remove(token)
 
-            # Might need to end turn here
-            if not self.ruleset.MOVE_AFTER_PICKUP:
-                return True # TODO: Need to stop making more turns
+            # TODO: Might need to end turn here
+            #if not self.ruleset.MOVE_AFTER_PICKUP:
+            #    return True
+
+        return True
 
 class Player:
-    def __init__(self, colour, cards=[]):
+    def __init__(self, colour):
         self.colour = colour
-        self.cards = cards
+        self.cards = []
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))

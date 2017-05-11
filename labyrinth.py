@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from board import *
 from player import *
-import time
+import time, random, copy
 
 class RuleSet:
     def __init__(self):
@@ -18,6 +18,15 @@ class Labyrinth:
     def __init__(self, ruleset, players):
         self.ruleset = ruleset
         self.gameboard = GameBoard(players)
+        self.deck = list(copy.deepcopy(all_tokens))
+        random.shuffle(self.deck)
+        print(self.deck)
+
+    def deal_cards(self, num=1):
+        for i in range(num):
+            for p in self.gameboard.players:
+                p.cards.append(self.deck[0])
+                self.deck = self.deck[1:]
 
     def make_turn(self):
         # Get the player who's turn it is
@@ -52,6 +61,7 @@ def main():
     players = [Player(colour) for colour in all_player_colours]
 
     lab = Labyrinth(ruleset, players)
+    lab.deal_cards(3)
     print(lab)
 
     for i in range(100):
