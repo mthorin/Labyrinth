@@ -26,6 +26,8 @@ class GameBoard:
         if dynamic_placement is None:
             dynamic_placement = random_placement
 
+        self.turn = 0
+
         # Create an empty board
         self._board = [[None for x in range(7)] for y in range(7)]
 
@@ -126,6 +128,62 @@ class GameBoard:
         if not(len(missing_tokens) == 0 and len(incorrect_tokens) == 0):
             print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
+
+
+    def slide_tiles(self, direction, orientation):
+        #TODO: Move players
+        assert(self.last_slide is None or self.last_slide != direction)
+        TileMovement.is_valid(direction)
+
+        # Create new board to apply slide to
+        new_board = self.clone()
+        floating_tile = new_board.floating_tile
+        floating_tile.rotate(orientation)
+
+        edge, row = direction
+        print(direction)
+        if edge == TileMovement.T or edge == TileMovement.B:
+            offset = 1 if row == TileMovement.L else (
+                     3 if row == TileMovement.M else 5)
+
+            # Create a temporary column for easy shifting
+            column = [t for x, y, t in new_board.iterate() if x == offset]
+            if edge == TileMovement.T:
+                # Move tiles down
+                column = [floating_tile] + column
+                new_board.floating_tile = column[len(column) - 1]
+                column = column[:-1]
+            elif edge == TileMovement.B:
+                # Move tiles up
+                column.append(floating_tile)
+                new_board.floating_tile = column[0]
+                column = column[1:]
+            # Put temporary column back into board representation
+            for y in range(7):
+                new_board._board[y][offset] = column[y]
+
+        elif edge == TileMovement.L or edge == TileMovement.R:
+            offset = (row * 2) + 1
+
+            row = new_board._board[offset]
+            if edge == TileMovement.L:
+                #Move tiles right
+                row = [floating_tile] + row
+                new_board.floating_tile = row[len(row) - 1]
+                new_board._board[offset] = row[:-1]
+            elif edge == TileMovement.R:
+                # Move tiles left
+                row.append(floating_tile)
+                new_board.floating_tile = row[0]
+                new_board._board[offset] = row[1:]
+
+        else:
+            print(edge)
+            assert(False) # Invalid edge
+        new_board.last_slide = TileMovement.invert(direction)
+        new_board.is_valid() # Check the changes haven't broken the board
+        return new_board
+
 
     def __str__(self):
         def tile_to_lines(tile):

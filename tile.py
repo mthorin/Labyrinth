@@ -19,7 +19,7 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
         assert(edge in [cls.T, cls.B, cls.L, cls.R])
         if edge == cls.T or edge == cls.B:
             assert(row in [cls.L, cls.M, cls.R])
-        elif edge == L or edge == cls.R:
+        elif edge == cls.L or edge == cls.R:
             assert(row in [cls.T, cls.M, cls.B])
         else:
             assert(False)
@@ -61,7 +61,7 @@ class Tile:
         # angle is clockwise and must be a multiple of 90 degrees
         angle = int(angle) % 360
         assert(angle in [0, 90, 180, 270])
-        assert(angle == 0 or self.can_move)
+        assert(self.can_move)
         while angle > 0:
             tmp = self.NORTH
             self.NORTH = self.WEST
