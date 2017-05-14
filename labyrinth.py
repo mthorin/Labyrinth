@@ -28,16 +28,20 @@ class Labyrinth:
                 p.cards.append(self.deck[0])
                 self.deck = self.deck[1:]
 
-    def make_turn(self):
+    def make_turn(self, gameboard=None, save=True):
+        # Use current gameboard by default
+        if gameboard is None:
+            gameboard = self.gameboard
+
         # Get the player who's turn it is
-        player = self.gameboard.players[self.gameboard.turn]
+        player = gameboard.players[gameboard.turn]
 
         # Let them decide a move
-        (direction, orientation, move_path) = player.decide_move(self.gameboard)
+        (direction, orientation, move_path) = player.decide_move(gameboard)
 
         # Execute the slide
-        board = self.gameboard.slide_tiles(direction, orientation)
-        player = board.players[self.gameboard.turn]
+        board = gameboard.slide_tiles(direction, orientation)
+        player = board.players[board.turn]
 
         # If there is a move limit, enforce it
         if self.ruleset.MOVE_TILE_LIMIT > 0:
@@ -47,9 +51,35 @@ class Labyrinth:
         for step in move_path:
             PlayerMovement.move(step, board._board, player)
 
+        # Next person's turn
+        board.turn = (board.turn + 1) % len(board.players)
+
         # Save the changes
-        self.gameboard = board
-        self.gameboard.turn = (self.gameboard.turn + 1) % len(board.players)
+        if save:
+            self.gameboard = board
+
+        return board
+
+    def who_won(self, gameboard=None):
+        # Use current gameboard by default
+        if gameboard is None:
+            gameboard = self.gameboard
+
+        players = gameboard.players
+        num_players = len(players)
+        turn = gameboard.turn
+
+        # Check every player
+        for i in range(num_players):
+            # Start from the last player who played
+            p = gameboard.players[(i + turn - 1) % num_players]
+
+            # If they have no cards and are at home, then they have won
+            if len(p.cards) == 0 and p.x == p.home_x and p.y == p.home_y:
+                return p
+        # Nobody has won yet
+        return None
+
 
     def __str__(self):
         return "{}\n{}\n{}\n\n".format(self.gameboard, self.gameboard.players, self.gameboard.floating_tile)
@@ -64,12 +94,13 @@ def main():
     lab.deal_cards(3)
     print(lab)
 
-    for i in range(100):
+    while lab.who_won() is None:
         lab.make_turn()
         print(lab)
         time.sleep(0.1)
 
     print("Done")
+    print("Winner: {}".format(lab.who_won()))
 
 if __name__ == '__main__':
     main()
