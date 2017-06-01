@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from tile import TileMovement
 from colours import colourise
-import random
+import random, math
 
 all_player_colours = ["red", "blue", "green", "yellow"]
 
@@ -66,7 +66,7 @@ class Player:
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
-        return self.random_move(gameboard)
+        return self.one_lookahead_move(gameboard)
 
     def random_move(self, gameboard):
         # Slide the tile in a random direction and orientation
@@ -93,6 +93,65 @@ class Player:
 
 
         return direction, orientation, path
+
+    def one_lookahead_move(self, gameboard):
+        best_direction = None
+        best_orientation = None
+        best_path = None
+        best_score = math.inf
+
+        # For each possible slide
+        for (direction, orientation) in TileMovement.all_moves():
+            if (direction, orientation) != gameboard.last_slide:
+                # Slide tile to a temporary board
+                new_board = gameboard.slide_tiles((direction, orientation), 0)
+                player = new_board.players[(new_board.turn - 1) % len(new_board.players)]
+
+                # Find out what player is targeting
+                targets = []
+                if player.cards == []:
+                    targets = [(player.home_x, player.home_y)]
+                else:
+                    num_cards = len(player.cards) #TODO: 1 if self.ruleset.CARDS_IN_ORDER else len(player.cards)
+                    for i in range(num_cards):
+                        card_loc = new_board.find_card(player.cards[i])
+                        if card_loc:
+                            targets.append(card_loc)
+
+                # Find best path by checking each target in turn
+                player_start_x = player.x
+                player_start_y = player.y
+                best_target_score = math.inf
+                best_target_path = None
+                for target_x, target_y in targets:
+                    # Reset player location
+                    player.x = player_start_x
+                    player.y = player_start_y
+
+                    # TODO: Try to find the best path
+                    path = []
+                    for i in range(100): # Make 100 attempts at a step
+                        step = random.choice([PlayerMovement.UP, PlayerMovement.LEFT,
+                                       PlayerMovement.DOWN, PlayerMovement.RIGHT])
+                        if PlayerMovement.move(step, new_board._board, player):
+                            path.append(step)
+
+
+                    # Calculate how good the move is
+                    score = abs(player.x - target_x) + abs(player.y - target_y)
+
+                    if score < best_target_score:
+                        best_target_score = score
+                        best_target_path = path
+
+                # Check if this slide is better than the previous
+                if best_target_score < best_score:
+                    best_direction = direction
+                    best_orientation = orientation
+                    best_path = best_target_path
+                    best_score = best_target_score
+
+        return (best_direction, best_orientation), 0, best_path
 
     def __str__(self):
         return colourise(self.colour, "{}({},{},{})".format(self.colour,self.x,self.y,self.cards))

@@ -14,8 +14,8 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
     R = 4 # Right
 
     @classmethod
-    def is_valid(cls, direction):
-        edge, row = direction
+    def is_valid(cls, movement):
+        edge, row = movement
         assert(edge in [cls.T, cls.B, cls.L, cls.R])
         if edge == cls.T or edge == cls.B:
             assert(row in [cls.L, cls.M, cls.R])
@@ -25,9 +25,9 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
             assert(False)
 
     @classmethod
-    def invert(cls, direction):
-        cls.is_valid(direction)
-        edge, row = direction
+    def invert(cls, movement):
+        cls.is_valid(movement)
+        edge, row = movement
         if edge == cls.T:
             edge = cls.B
         elif edge == cls.B:
@@ -38,6 +38,21 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
             edge = cls.L
         return (edge, row)
 
+    @classmethod
+    def all_moves(cls):
+        return [ (cls.T, cls.L)
+               , (cls.T, cls.M)
+               , (cls.T, cls.R)
+               , (cls.B, cls.L)
+               , (cls.B, cls.M)
+               , (cls.B, cls.R)
+               , (cls.L, cls.T)
+               , (cls.L, cls.M)
+               , (cls.L, cls.B)
+               , (cls.R, cls.T)
+               , (cls.R, cls.M)
+               , (cls.R, cls.B)
+               ]
 
 class Tile:
     def __init__(self, rotation=0):

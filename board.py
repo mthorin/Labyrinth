@@ -94,6 +94,12 @@ class GameBoard:
             for x, tile in enumerate(row):
                 yield (x, y, tile)
 
+    def find_card(self, card):
+        for x, y, tile in self.iterate():
+            if tile.token == card:
+                return x, y
+        return None
+
     def clone(self):
         new_board = copy.deepcopy(self)
         return new_board
