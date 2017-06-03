@@ -4,8 +4,9 @@ import random
 from itertools import product
 
 from tile import *
-from player import all_player_colours, Player
+from player import all_player_colours, Player, PlayerMovement
 from labyrinth import RuleSet
+from utils import PriorityQueue
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "dragonfly", "gold", "keys", "gem", "lizard", "helmet",
@@ -134,6 +135,84 @@ class GameBoard:
         if not(len(missing_tokens) == 0 and len(incorrect_tokens) == 0):
             print("Missing: {}\nInvalid: {}".format(missing_tokens, incorrect_tokens))
             assert(False)
+
+
+    def shortest_path_to_closest(self, start, end):
+        class FakePlayer(object):
+            pass
+
+        def heuristic(p):
+            x, y = p
+            end_x, end_y = end
+            return abs(end_x - x) + abs(end_y - y)
+
+        frontier = PriorityQueue()
+        frontier.push((start, 0, None), heuristic(start))
+        visited = set()
+        shortest_links = set()
+
+        # Explore until no more
+        while not frontier.empty():
+            (point, cost, prev) = frontier.pop()
+            if point not in visited:
+                visited.add(point)
+                shortest_links.add((point, cost, prev))
+
+                # Create a fake player to move
+                x, y = point
+                fake_player = FakePlayer()
+                fake_player.cards = []
+
+                # Add all children
+                for m in PlayerMovement.all_moves():
+                    fake_player.x = x
+                    fake_player.y = y
+                    if PlayerMovement.move(m, self._board, fake_player):
+                        new_pos = (fake_player.x, fake_player.y)
+                        new_cost = cost + 1
+                        frontier.push((new_pos, new_cost, point), new_cost + heuristic(new_pos))
+
+        # Work out closest visited to target
+        best_link = None
+        best_heuristic = math.inf
+        for link in shortest_links:
+            point, _, _ = link
+            h = heuristic(point)
+            if h < best_heuristic:
+                best_link = link
+                best_heuristic = h
+
+        # Find the reversed path
+        target, _, prev = best_link
+        rev_path = [target]
+        while prev is not None:
+            def match_link(i):
+                (t, _, p) = i
+                return t == prev
+            # Find the prev link
+            prev_link = list(filter(match_link, list(shortest_links)))
+            target, _, prev = prev_link[0]
+            rev_path.append(target)
+
+        # Convert the coord-path to a move path
+        path = list(reversed(rev_path))[1:]
+        last_x, last_y = start
+        move_path = []
+        while path != []:
+            next_x, next_y = path[0]
+            path = path[1:]
+            if last_x + 1 == next_x:
+                move_path.append(PlayerMovement.RIGHT)
+            elif last_x - 1 == next_x:
+                move_path.append(PlayerMovement.LEFT)
+            elif last_y + 1 == next_y:
+                move_path.append(PlayerMovement.DOWN)
+            elif last_y - 1 == next_y:
+                move_path.append(PlayerMovement.UP)
+            last_x = next_x
+            last_y = next_y
+
+        return target, move_path # Closest End Coord, Path
 
 
     def slide_tiles(self, direction, orientation):

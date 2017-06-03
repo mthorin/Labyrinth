@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from colours import colourise
+from utils import colourise
+import random
 import math
 
 global tile_id
@@ -40,19 +41,21 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
 
     @classmethod
     def all_moves(cls):
-        return [ (cls.T, cls.L)
-               , (cls.T, cls.M)
-               , (cls.T, cls.R)
-               , (cls.B, cls.L)
-               , (cls.B, cls.M)
-               , (cls.B, cls.R)
-               , (cls.L, cls.T)
-               , (cls.L, cls.M)
-               , (cls.L, cls.B)
-               , (cls.R, cls.T)
-               , (cls.R, cls.M)
-               , (cls.R, cls.B)
-               ]
+        l = [ (cls.T, cls.L)
+            , (cls.T, cls.M)
+            , (cls.T, cls.R)
+            , (cls.B, cls.L)
+            , (cls.B, cls.M)
+            , (cls.B, cls.R)
+            , (cls.L, cls.T)
+            , (cls.L, cls.M)
+            , (cls.L, cls.B)
+            , (cls.R, cls.T)
+            , (cls.R, cls.M)
+            , (cls.R, cls.B)
+            ]
+        random.shuffle(l)
+        return l
 
 class Tile:
     def __init__(self, rotation=0):

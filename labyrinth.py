@@ -48,8 +48,9 @@ class Labyrinth:
             move_path[self.ruleset.MOVE_TILE_LIMIT:]
 
         # Execute the move
+        print(move_path)
         for step in move_path:
-            PlayerMovement.move(step, board._board, player)
+            assert(PlayerMovement.move(step, board._board, player))
 
         # Next person's turn
         board.turn = (board.turn + 1) % len(board.players)

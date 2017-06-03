@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from tile import TileMovement
-from colours import colourise
+from utils import colourise
 import random, math
 
 all_player_colours = ["red", "blue", "green", "yellow"]
@@ -10,6 +10,12 @@ class PlayerMovement:
     DOWN = 1
     LEFT = -2
     RIGHT = 2
+
+    @classmethod
+    def all_moves(self):
+        l = [self.UP, self.DOWN, self.LEFT, self.RIGHT]
+        random.shuffle(l)
+        return l
 
     @staticmethod
     def move(step, board, player):
@@ -95,16 +101,16 @@ class Player:
         return direction, orientation, path
 
     def one_lookahead_move(self, gameboard):
-        best_direction = None
-        best_orientation = None
+        best_slide = None
         best_path = None
         best_score = math.inf
+        orientation = 0
 
         # For each possible slide
-        for (direction, orientation) in TileMovement.all_moves():
-            if (direction, orientation) != gameboard.last_slide:
+        for slide in TileMovement.all_moves():
+            if gameboard.last_slide is None or slide != gameboard.last_slide:
                 # Slide tile to a temporary board
-                new_board = gameboard.slide_tiles((direction, orientation), 0)
+                new_board = gameboard.slide_tiles(slide, orientation)
                 player = new_board.players[(new_board.turn - 1) % len(new_board.players)]
 
                 # Find out what player is targeting
@@ -119,39 +125,28 @@ class Player:
                             targets.append(card_loc)
 
                 # Find best path by checking each target in turn
-                player_start_x = player.x
-                player_start_y = player.y
+                player_start = (player.x, player.y)
                 best_target_score = math.inf
                 best_target_path = None
                 for target_x, target_y in targets:
-                    # Reset player location
-                    player.x = player_start_x
-                    player.y = player_start_y
-
-                    # TODO: Try to find the best path
-                    path = []
-                    for i in range(100): # Make 100 attempts at a step
-                        step = random.choice([PlayerMovement.UP, PlayerMovement.LEFT,
-                                       PlayerMovement.DOWN, PlayerMovement.RIGHT])
-                        if PlayerMovement.move(step, new_board._board, player):
-                            path.append(step)
-
+                    # Try to calculate the shortest path
+                    (end_x, end_y), path = new_board.shortest_path_to_closest((player.x, player.y), (target_x, target_y))
 
                     # Calculate how good the move is
-                    score = abs(player.x - target_x) + abs(player.y - target_y)
+                    score = abs(end_x - target_x) + abs(end_y - target_y)
 
+                    # Save if it is a better score
                     if score < best_target_score:
                         best_target_score = score
                         best_target_path = path
 
                 # Check if this slide is better than the previous
                 if best_target_score < best_score:
-                    best_direction = direction
-                    best_orientation = orientation
+                    best_slide = slide
                     best_path = best_target_path
                     best_score = best_target_score
 
-        return (best_direction, best_orientation), 0, best_path
+        return best_slide, orientation, best_path
 
     def __str__(self):
         return colourise(self.colour, "{}({},{},{})".format(self.colour,self.x,self.y,self.cards))
