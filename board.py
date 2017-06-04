@@ -183,7 +183,8 @@ class GameBoard:
                 best_heuristic = h
 
         # Find the reversed path
-        target, _, prev = best_link
+        final_target, _, prev = best_link
+        target = final_target
         rev_path = [target]
         while prev is not None:
             def match_link(i):
@@ -191,11 +192,13 @@ class GameBoard:
                 return t == prev
             # Find the prev link
             prev_link = list(filter(match_link, list(shortest_links)))
+            assert(len(prev_link) == 1)
             target, _, prev = prev_link[0]
             rev_path.append(target)
 
         # Convert the coord-path to a move path
         path = list(reversed(rev_path))[1:]
+        coord_path = path
         last_x, last_y = start
         move_path = []
         while path != []:
@@ -212,7 +215,8 @@ class GameBoard:
             last_x = next_x
             last_y = next_y
 
-        return target, move_path # Closest End Coord, Path
+        #print("target: {}; coord_path: {}; move_path: {}".format(final_target, coord_path, move_path))
+        return final_target, move_path # Closest End Coord, Path
 
 
     def slide_tiles(self, direction, orientation):

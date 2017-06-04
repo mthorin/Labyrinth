@@ -48,7 +48,6 @@ class Labyrinth:
             move_path[self.ruleset.MOVE_TILE_LIMIT:]
 
         # Execute the move
-        print(move_path)
         for step in move_path:
             assert(PlayerMovement.move(step, board._board, player))
 
@@ -95,13 +94,15 @@ def main():
     lab.deal_cards(3)
     print(lab)
 
+    turns = 0
     while lab.who_won() is None:
         lab.make_turn()
         print(lab)
         time.sleep(0.1)
+        turns += 1
 
     print("Done")
-    print("Winner: {}".format(lab.who_won()))
+    print("Winner: {} in {} turns".format(lab.who_won(), turns))
 
 if __name__ == '__main__':
     main()

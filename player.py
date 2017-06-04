@@ -111,7 +111,7 @@ class Player:
             if gameboard.last_slide is None or slide != gameboard.last_slide:
                 # Slide tile to a temporary board
                 new_board = gameboard.slide_tiles(slide, orientation)
-                player = new_board.players[(new_board.turn - 1) % len(new_board.players)]
+                player = new_board.players[new_board.turn]
 
                 # Find out what player is targeting
                 targets = []
@@ -145,7 +145,6 @@ class Player:
                     best_slide = slide
                     best_path = best_target_path
                     best_score = best_target_score
-
         return best_slide, orientation, best_path
 
     def __str__(self):
