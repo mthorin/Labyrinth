@@ -5,7 +5,6 @@ from itertools import product
 
 from tile import *
 from player import all_player_colours, Player, PlayerMovement
-from labyrinth import RuleSet
 from utils import PriorityQueue
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",

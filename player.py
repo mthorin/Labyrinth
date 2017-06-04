@@ -90,7 +90,7 @@ class Player:
 
         # Calculate a random path
         path = []
-        player = new_board.players[(new_board.turn - 1) % len(new_board.players)]
+        player = new_board.players[new_board.turn]
         for i in range(100): # Make 100 attempts at a step
             step = random.choice([PlayerMovement.UP, PlayerMovement.LEFT,
                            PlayerMovement.DOWN, PlayerMovement.RIGHT])
