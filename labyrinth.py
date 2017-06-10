@@ -32,6 +32,9 @@ class Labyrinth:
         if gameboard is None:
             gameboard = self.gameboard
 
+        if gameboard.turn is None:
+            raise Exception("Game is over, nobody has a turn")
+
         # Get the player who's turn it is
         player = gameboard.players[gameboard.turn]
 
@@ -51,7 +54,14 @@ class Labyrinth:
             assert(PlayerMovement.move(step, board._board, player))
 
         # Next person's turn
-        board.turn = (board.turn + 1) % len(board.players)
+        start_turn = board.turn
+        skip_player = True
+        while skip_player:
+            board.turn = (board.turn + 1) % len(board.players)
+            if not board.players[board.turn].has_finished() or start_turn == board.turn:
+                skip_player = False
+        if start_turn == board.turn and board.players[board.turn].has_finished():
+            board.turn = None
 
         # Save the changes
         if save:

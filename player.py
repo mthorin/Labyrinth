@@ -104,48 +104,58 @@ class Player:
         best_slide = None
         best_path = None
         best_score = math.inf
-        orientation = 0
+        best_orientation = 0
+
+        orientations = [0, 90, 180, 270]
+        random.shuffle(orientations)
 
         # For each possible slide
         for slide in TileMovement.all_moves():
-            if gameboard.last_slide is None or slide != gameboard.last_slide:
-                # Slide tile to a temporary board
-                new_board = gameboard.slide_tiles(slide, orientation)
-                player = new_board.players[new_board.turn]
+            # For each possible tile orientation
+            for orientation in orientations:
+                if gameboard.last_slide is None or slide != gameboard.last_slide:
+                    # Slide tile to a temporary board
+                    new_board = gameboard.slide_tiles(slide, orientation)
+                    player = new_board.players[new_board.turn]
 
-                # Find out what player is targeting
-                targets = []
-                if player.cards == []:
-                    targets = [(player.home_x, player.home_y)]
-                else:
-                    num_cards = len(player.cards) #TODO: 1 if self.ruleset.CARDS_IN_ORDER else len(player.cards)
-                    for i in range(num_cards):
-                        card_loc = new_board.find_card(player.cards[i])
-                        if card_loc:
-                            targets.append(card_loc)
+                    # Find out what player is targeting
+                    targets = []
+                    if player.cards == []:
+                        targets = [(player.home_x, player.home_y)]
+                    else:
+                        num_cards = len(player.cards) #TODO: 1 if self.ruleset.CARDS_IN_ORDER else len(player.cards)
+                        for i in range(num_cards):
+                            card_loc = new_board.find_card(player.cards[i])
+                            if card_loc:
+                                targets.append(card_loc)
 
-                # Find best path by checking each target in turn
-                player_start = (player.x, player.y)
-                best_target_score = math.inf
-                best_target_path = None
-                for target_x, target_y in targets:
-                    # Try to calculate the shortest path
-                    (end_x, end_y), path = new_board.shortest_path_to_closest((player.x, player.y), (target_x, target_y))
+                    # Find best path by checking each target in turn
+                    player_start = (player.x, player.y)
+                    best_target_score = math.inf
+                    best_target_path = None
+                    for target_x, target_y in targets:
+                        # Try to calculate the shortest path
+                        (end_x, end_y), path = new_board.shortest_path_to_closest((player.x, player.y), (target_x, target_y))
 
-                    # Calculate how good the move is
-                    score = abs(end_x - target_x) + abs(end_y - target_y)
+                        # Calculate how good the move is
+                        score = abs(end_x - target_x) + abs(end_y - target_y)
 
-                    # Save if it is a better score
-                    if score < best_target_score:
-                        best_target_score = score
-                        best_target_path = path
+                        # Save if it is a better score
+                        if score < best_target_score:
+                            best_target_score = score
+                            best_target_path = path
 
-                # Check if this slide is better than the previous
-                if best_target_score < best_score:
-                    best_slide = slide
-                    best_path = best_target_path
-                    best_score = best_target_score
-        return best_slide, orientation, best_path
+                    # Check if this slide is better than the previous
+                    if best_target_score < best_score:
+                        best_slide = slide
+                        best_path = best_target_path
+                        best_score = best_target_score
+                        best_orientation = orientation
+
+        return best_slide, best_orientation, best_path
+
+    def has_finished(self):
+        return self.cards == [] and self.x == self.home_x and self.y == self.home_y
 
     def __str__(self):
         return colourise(self.colour, "{}({},{},{})".format(self.colour,self.x,self.y,self.cards))
