@@ -2,7 +2,9 @@
 <img src="http://www.mindgames.ca/content/images/thumbs/0000268_labyrinth-board-game.jpeg" style="width: 350px;"/>
 
 ## How to run
-`python Labyrinth.py` : Runs a simulated game once with a verbose output
+`python labyrinth.py` : Runs a simulated game once with a verbose output
+
+`python interactive_labyrinth.py` : Runs a game with human players
 
 `python find_best_board.py` : Tries multiple simulations to find a "fair" board
 (use SIGINT to print the best starting board found)
@@ -21,6 +23,7 @@ with a secondary aim of looking into whether different rules could improve the g
 - [x] Slide tiles horizontally and vertically when the floating tile is pushed
 - [x] Add tokens that players need to pickup
 - [x] Add "ai" to play the game
+- [x] Add an interactive mode to allow humans to play against ai
 
 ## TODO
 - [ ] Implement some of the game rule changes

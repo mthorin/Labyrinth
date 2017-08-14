@@ -57,6 +57,38 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
         random.shuffle(l)
         return l
 
+    @classmethod
+    def from_str(cls, side, row):
+        if side == "t":
+            side_cls = cls.T
+        elif side == "b":
+            side_cls = cls.B
+        elif side == "l":
+            side_cls = cls.L
+        elif side == "r":
+            side_cls = cls.R
+        else:
+            assert(False) # side was not valid
+
+        if row == "t":
+            row_cls = cls.T
+        elif row == "b":
+            row_cls = cls.B
+        elif row == "l":
+            row_cls = cls.L
+        elif row == "r":
+            row_cls = cls.R
+        elif row == "m":
+            row_cls = cls.M
+        else:
+            assert(False) # row was not valid
+
+        output = (side_cls, row_cls)
+        TileMovement.is_valid(output)
+        return output
+
+
+
 class Tile:
     def __init__(self, rotation=0):
         global tile_id

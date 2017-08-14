@@ -60,6 +60,7 @@ class Labyrinth:
             board.turn = (board.turn + 1) % len(board.players)
             if not board.players[board.turn].has_finished() or start_turn == board.turn:
                 skip_player = False
+        # Set turn to None if there are no players have a move left
         if start_turn == board.turn and board.players[board.turn].has_finished():
             board.turn = None
 
@@ -77,6 +78,10 @@ class Labyrinth:
         players = gameboard.players
         num_players = len(players)
         turn = gameboard.turn
+
+        # If no players have a turn left, then start from the begining
+        if turn is None:
+            turn = 0
 
         # Check every player
         for i in range(num_players):
