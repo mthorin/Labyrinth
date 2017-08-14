@@ -87,6 +87,34 @@ class TileMovement: # Represent as (Edge, Row) i.e. (T, M) for Top Middle
         TileMovement.is_valid(output)
         return output
 
+    @classmethod
+    def to_str(cls, pair):
+        side, row = pair
+        if side == cls.T:
+            side_cls = "top"
+        elif side == cls.B:
+            side_cls = "bottom"
+        elif side == cls.L:
+            side_cls = "left"
+        elif side == cls.R:
+            side_cls = "right"
+        else:
+            assert(False) # side was not valid
+
+        if row == cls.T:
+            row_cls = "top"
+        elif row == cls.B:
+            row_cls = "bottom"
+        elif row == cls.L:
+            row_cls = "left"
+        elif row == cls.R:
+            row_cls = "right"
+        elif row == cls.M:
+            row_cls = "middle"
+        else:
+            assert(False) # row was not valid
+
+        return "{} {}".format(side_cls, row_cls)
 
 
 class Tile:

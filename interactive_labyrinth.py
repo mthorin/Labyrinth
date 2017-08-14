@@ -11,8 +11,10 @@ class InteractivePlayer(Player):
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
-        print("Do not choose {}".format(gameboard.last_slide))
+        if gameboard.last_slide is not None:
+            print("Do not choose {}".format(TileMovement.to_str(gameboard.last_slide)))
 
+        print("Your cards are {}".format(self.cards))
         slide_direction = input("Slide Direction (top/bottom/left/right): ").lower()[0]
         assert(slide_direction in ["t", "b", "l", "r"])
 
@@ -36,6 +38,7 @@ class InteractivePlayer(Player):
         path = []
         running = True
         player = new_board.players[new_board.turn]
+        print("Your cards are {}".format(player.cards))
         while True:
             direction = input("Move player (w/a/s/d/end): ").lower()[0]
             assert(direction in ["w", "a", "s", "d", "e"])
