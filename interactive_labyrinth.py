@@ -2,6 +2,7 @@
 from labyrinth import *
 from player import *
 from tile import *
+import utils
 import time
 
 class InteractivePlayer(Player):
@@ -65,6 +66,20 @@ class InteractivePlayer(Player):
 
 def main():
     ruleset = RuleSet()
+    utils.enable_colours(True)
+
+    # Print title in colours
+    title = "Labyrinth"
+    colours = ["red", "blue", "yellow", "green"]
+    for i, letter in enumerate(iter(title)):
+        print(colourise(colours[i % 4], letter), end='')
+
+    colours = input("\nDid the title render correctly? (yes/no)? ")
+    if colours.lower() == "yes":
+        utils.enable_colours(True)
+    elif colours.lower() == "no":
+        utils.enable_colours(False)
+    print("")
 
     num_humans = int(input("Number of human players (max 4): "))
     assert(0 <= num_humans <= 4)

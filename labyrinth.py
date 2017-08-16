@@ -19,6 +19,7 @@ class Labyrinth:
         self.ruleset = ruleset
         self.gameboard = GameBoard(players)
         self.deck = list(copy.deepcopy(all_tokens))
+        self.show_colours = True
         random.shuffle(self.deck)
 
     def deal_cards(self, num=1):

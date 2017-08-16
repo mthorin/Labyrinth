@@ -152,9 +152,9 @@ class Tile:
         token = (self.token if self.token else "")
         token = token.ljust(15) if len(token) > 5 else token.center(15)
 
-        path = "┌" if self.can_move else "⬤"
+        path = "┌" if self.can_move else "X"
         path = path + ("┐     ┌" if self.NORTH else "───────")
-        path = path + ("┐\n" if self.can_move else "⬤\n")
+        path = path + ("┐\n" if self.can_move else "X\n")
 
         path = path + ("└" if self.WEST else "│")
         path = path + " %s " % token[:5]
@@ -168,9 +168,9 @@ class Tile:
         path = path + " %s " % token[10:15]
         path = path + ("┐\n" if self.EAST else "│\n")
 
-        path = path + ("└" if self.can_move else "⬤")
+        path = path + ("└" if self.can_move else "X")
         path = path + ("┘     └" if self.SOUTH else "───────")
-        path = path + ("┘" if self.can_move else "⬤")
+        path = path + ("┘" if self.can_move else "X")
 
         if self._colours:
             gap = math.ceil(len(path) / len(self._colours))

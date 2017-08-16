@@ -18,18 +18,26 @@ class PriorityQueue:
     def empty(self):
         return len(self._queue) == 0
 
+def enable_colours(value):
+    global SHOW_COLOURS
+    SHOW_COLOURS = value
+
 
 def colourise(colour, string):
-    if colour is None:
+    global SHOW_COLOURS
+    if SHOW_COLOURS:
+        if colour is None:
+            colour = ''
+        elif colour.lower() == "blue":
+            colour = '\033[94m'
+        elif colour.lower() == "green":
+            colour = '\033[92m'
+        elif colour.lower() == "yellow":
+            colour = '\033[93m'
+        elif colour.lower() == "red":
+            colour = '\033[91m'
+    else:
         colour = ''
-    elif colour.lower() == "blue":
-        colour = '\033[94m'
-    elif colour.lower() == "green":
-        colour = '\033[92m'
-    elif colour.lower() == "yellow":
-        colour = '\033[93m'
-    elif colour.lower() == "red":
-        colour = '\033[91m'
 
     output = ""
     for line in string.split('\n'):
