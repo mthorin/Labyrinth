@@ -152,25 +152,37 @@ class Tile:
         token = (self.token if self.token else "")
         token = token.ljust(15) if len(token) > 5 else token.center(15)
 
-        path = "┌" if self.can_move else "X"
-        path = path + ("┐     ┌" if self.NORTH else "───────")
-        path = path + ("┐\n" if self.can_move else "X\n")
+        if "red" in self._colours:
+            path = "R"
+        else:
+            path = "┌" if self.can_move else "X"
+        path += ("┐     ┌" if self.NORTH else "───────")
+        if "blue" in self._colours:
+            path += "B\n"
+        else:
+            path += ("┐\n" if self.can_move else "X\n")
 
-        path = path + ("└" if self.WEST else "│")
-        path = path + " %s " % token[:5]
-        path = path + ("┘\n" if self.EAST else "│\n")
+        path += "└" if self.WEST else "│"
+        path += " %s " % token[:5]
+        path += "┘\n" if self.EAST else "│\n"
 
-        path = path + (" " if self.WEST else "│")
-        path = path + " %s " % token[5:10]
-        path = path + (" \n" if self.EAST else "│\n")
+        path += " " if self.WEST else "│"
+        path += " %s " % token[5:10]
+        path += " \n" if self.EAST else "│\n"
 
-        path = path + ("┌" if self.WEST else "│")
-        path = path + " %s " % token[10:15]
-        path = path + ("┐\n" if self.EAST else "│\n")
+        path += "┌" if self.WEST else "│"
+        path += " %s " % token[10:15]
+        path += "┐\n" if self.EAST else "│\n"
 
-        path = path + ("└" if self.can_move else "X")
-        path = path + ("┘     └" if self.SOUTH else "───────")
-        path = path + ("┘" if self.can_move else "X")
+        if "yellow" in self._colours:
+            path += "Y"
+        else:
+            path += "└" if self.can_move else "X"
+        path += "┘     └" if self.SOUTH else "───────"
+        if "green" in self._colours:
+            path += "G"
+        else:
+            path += "┘" if self.can_move else "X"
 
         if self._colours:
             gap = math.ceil(len(path) / len(self._colours))

@@ -40,6 +40,7 @@ def colourise(colour, string):
         colour = ''
 
     output = ""
+    newline = '\033[0m\n' if SHOW_COLOURS else '\n'
     for line in string.split('\n'):
-        output += colour + line + '\033[0m\n'
+        output += colour + line + newline
     return output[:-1]
