@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import labyrinth, player, tile
 import time
+import utils
 
 def main():
     global best_board
     TIMEOUT_LENGTH = 10
     RANGE_LIMIT = 5
 
+    utils.enable_colours(True)
     best_board = None
     best_avg = 0
 

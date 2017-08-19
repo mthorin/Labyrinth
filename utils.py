@@ -44,3 +44,15 @@ def colourise(colour, string):
     for line in string.split('\n'):
         output += colour + line + newline
     return output[:-1]
+
+def checked_input(message, check, convert=None):
+    if convert is None:
+        convert = lambda x: x
+    while True:
+        output = input(message)
+        try:
+            if check(convert(output)):
+                return convert(output)
+        except ValueError:
+            pass
+        print("{} is invalid".format(output))

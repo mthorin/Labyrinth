@@ -2,6 +2,7 @@
 from board import *
 from player import *
 import time, random, copy
+import utils
 
 class RuleSet:
     def __init__(self):
@@ -103,6 +104,8 @@ class Labyrinth:
 
 def main():
     ruleset = RuleSet()
+    utils.enable_colours(True)
+
     players = [Player(colour) for colour in all_player_colours]
 
     lab = Labyrinth(ruleset, players)

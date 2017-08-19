@@ -2,6 +2,7 @@
 from utils import colourise
 import random
 import math
+import utils
 
 global tile_id
 tile_id = 0
@@ -152,12 +153,12 @@ class Tile:
         token = (self.token if self.token else "")
         token = token.ljust(15) if len(token) > 5 else token.center(15)
 
-        if "red" in self._colours:
+        if "red" in self._colours and not utils.SHOW_COLOURS:
             path = "R"
         else:
             path = "┌" if self.can_move else "X"
         path += ("┐     ┌" if self.NORTH else "───────")
-        if "blue" in self._colours:
+        if "blue" in self._colours and not utils.SHOW_COLOURS:
             path += "B\n"
         else:
             path += ("┐\n" if self.can_move else "X\n")
@@ -174,12 +175,12 @@ class Tile:
         path += " %s " % token[10:15]
         path += "┐\n" if self.EAST else "│\n"
 
-        if "yellow" in self._colours:
+        if "yellow" in self._colours and not utils.SHOW_COLOURS:
             path += "Y"
         else:
             path += "└" if self.can_move else "X"
         path += "┘     └" if self.SOUTH else "───────"
-        if "green" in self._colours:
+        if "green" in self._colours and not utils.SHOW_COLOURS:
             path += "G"
         else:
             path += "┘" if self.can_move else "X"

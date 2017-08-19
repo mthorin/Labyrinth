@@ -2,6 +2,7 @@
 from labyrinth import *
 from player import *
 from tile import *
+from utils import checked_input
 import utils
 import time
 
@@ -16,20 +17,30 @@ class InteractivePlayer(Player):
             print("Do not choose {}".format(TileMovement.to_str(gameboard.last_slide)))
 
         print("Your cards are {}".format(self.cards))
-        slide_direction = input("Slide Direction (top/bottom/left/right): ").lower()[0]
-        assert(slide_direction in ["t", "b", "l", "r"])
 
-        if slide_direction in ["t", "b"]:
-            slide_slot = input("Slide Slot (left/middle/right): ").lower()[0]
-            assert(slide_slot in ["l", "m", "r"])
-        else:
-            slide_slot = input("Slide Slot (top/middle/bottom): ").lower()[0]
-            assert(slide_slot in ["t", "m", "b"])
+        slide = gameboard.last_slide
+        while slide == gameboard.last_slide:
+            slide_direction = checked_input("Slide Direction (top/bottom/left/right): ",
+                                            lambda x: x in ["t", "b", "l", "r"],
+                                            lambda x: x.lower()[0])
 
-        slide = TileMovement.from_str(slide_direction, slide_slot)
+            if slide_direction in ["t", "b"]:
+                slide_slot = checked_input("Slide Slot (left/middle/right): ",
+                                           lambda x: x in ["l", "m", "r"],
+                                           lambda x: x.lower()[0])
+            else:
+                slide_slot = checked_input("Slide Slot (top/middle/bottom): ",
+                                           lambda x: x in ["t", "m", "b"],
+                                           lambda x: x.lower()[0])
 
-        slide_orientation = int(input("Tile Orientation (0/90/180/270) CW: "))
-        assert(slide_orientation in [0, 90, 180, 270])
+            slide = TileMovement.from_str(slide_direction, slide_slot)
+
+            if slide == gameboard.last_slide:
+                print("Cannot slide the tile in that direction")
+
+        slide_orientation = checked_input("Tile Orientation (0/90/180/270) CW: ",
+                                          lambda x: x in [0, 90, 180, 270],
+                                          lambda x: int(x) % 360)
 
         new_board = gameboard.slide_tiles(slide, slide_orientation)
         print(new_board)
@@ -41,8 +52,9 @@ class InteractivePlayer(Player):
         player = new_board.players[new_board.turn]
         print("Your cards are {}".format(player.cards))
         while True:
-            direction = input("Move player (w/a/s/d/end): ").lower()[0]
-            assert(direction in ["w", "a", "s", "d", "e"])
+            direction = checked_input("Move player (w/a/s/d/end): ",
+                                      lambda x: x in ["w", "a", "s", "d", "end"],
+                                      lambda x: x.lower())
             if direction == "w":
                 step = PlayerMovement.UP
             elif direction == "a":
@@ -51,7 +63,7 @@ class InteractivePlayer(Player):
                 step = PlayerMovement.DOWN
             elif direction == "d":
                 step = PlayerMovement.RIGHT
-            elif direction == "e":
+            elif direction == "end":
                 break # no more input
             else:
                 assert(False) # impossible case
@@ -74,20 +86,27 @@ def main():
     for i, letter in enumerate(iter(title)):
         print(colourise(colours[i % 4], letter), end='')
 
-    colours = input("\nDid the title render correctly? (yes/no)? ")
-    if colours.lower() == "yes":
+    # Can terminal print colours?
+    colours = checked_input("\nDid the title render correctly? (yes/no)? ",
+                            lambda x: x == "yes" or x == "no",
+                            lambda x: x.lower())
+    if colours == "yes":
         utils.enable_colours(True)
-    elif colours.lower() == "no":
+    elif colours == "no":
         utils.enable_colours(False)
     print("")
 
-    num_humans = int(input("Number of human players (max 4): "))
-    assert(0 <= num_humans <= 4)
+    # Get number of human and ai players
+    num_humans = checked_input("Number of human players (max 4): ",
+                               lambda x: 0 <= x <= 4, int)
 
-    num_ai = int(input("Number of ai players (max {}): ".format(4 - num_humans)))
-    assert(0 <= num_ai <= 4)
-    assert(1 <= num_humans + num_ai <= 4)
+    max_ai = 4 - num_humans
+    num_ai = 0
+    if max_ai > 0:
+        num_ai = checked_input("Number of ai players (max {}): ".format(max_ai),
+                                   lambda x: 0 <= x <= max_ai, int)
 
+    # Create the players
     players = []
     if num_humans > 0:
         players += [InteractivePlayer(colour) for colour in all_player_colours[0:num_humans]]
