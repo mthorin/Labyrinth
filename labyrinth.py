@@ -3,10 +3,11 @@ from board import *
 from player import *
 import time, random, copy
 import utils
+from utils import checked_input, str_bool
 
 class RuleSet:
     def __init__(self):
-        self.SEE_ALL_CARDS = True
+        self.SEE_ALL_CARDS = False
         self.CARDS_IN_ORDER = False
         self.MOVE_BEFORE_TURN = False
         self.MOVE_AFTER_PICKUP = False
@@ -14,6 +15,29 @@ class RuleSet:
         self.NUMBER_OF_TOKENS = 3
         self.NUMBER_OF_SLIDES = 1
         self.MOVE_TILE_LIMIT = 0
+
+    def configure(self):
+        def request_bool(message, default):
+            if default:
+                yn = "YES/no"
+            else:
+                yn = "yes/NO"
+            return checked_input("{} ({}): ".format(message, yn),
+                                lambda x: x != None, str_bool, default)
+
+        def request_int(message, default, min_val, max_val):
+            return checked_input("{} [{}] ({}-{}): ".format(message, default, min_val, max_val),
+                                lambda x: min_val <= x <= max_val, int, default)
+
+        self.SEE_ALL_CARDS = request_bool("[RULESET] See all players cards", self.SEE_ALL_CARDS)
+        self.CARDS_IN_ORDER = request_bool("[RULESET] Must collect cards in order", self.CARDS_IN_ORDER)
+        self.MOVE_BEFORE_TURN = request_bool("[RULESET] Allow movement before slide", self.MOVE_BEFORE_TURN)
+        self.MOVE_AFTER_PICKUP = request_bool("[RULESET] Allow movement after pickup", self.MOVE_AFTER_PICKUP)
+        self.END_AT_HOME = request_bool("[RULESET] Game ends with players at home", self.END_AT_HOME)
+        self.NUMBER_OF_TOKENS = request_int("[RULESET] Maximum number of cards", self.NUMBER_OF_TOKENS, 0, len(all_tokens))
+        self.NUMBER_OF_SLIDES = request_int("[RULESET] Number of slides per turn", self.NUMBER_OF_SLIDES, 0, 100000)
+        self.MOVE_TILE_LIMIT = request_int("[RULESET] Player move limit (0 is unlimited)", self.MOVE_TILE_LIMIT, 0, 100000)
+
 
 class Labyrinth:
     def __init__(self, ruleset, players):
@@ -23,7 +47,13 @@ class Labyrinth:
         self.show_colours = True
         random.shuffle(self.deck)
 
-    def deal_cards(self, num=1):
+        # Work out how many cards to deal each player
+        max_cards = int(len(self.deck) / len(self.gameboard.players))
+        num = self.ruleset.NUMBER_OF_TOKENS
+        if max_cards < num:
+            num = max_cards
+
+        # Deal the cards
         for i in range(num):
             for p in self.gameboard.players:
                 p.cards.append(self.deck[0])
@@ -98,7 +128,10 @@ class Labyrinth:
 
 
     def __str__(self):
-        return "{}\n{}\n{}\n\n".format(self.gameboard, self.gameboard.players, self.gameboard.floating_tile)
+        if self.ruleset.SEE_ALL_CARDS:
+            return "{}\n{}\n{}\n\n".format(self.gameboard, self.gameboard.players, self.gameboard.floating_tile)
+        else:
+            return "{}\n\n{}\n\n".format(self.gameboard, self.gameboard.floating_tile)
 
     __repr__ = __str__
 
@@ -109,7 +142,6 @@ def main():
     players = [Player(colour) for colour in all_player_colours]
 
     lab = Labyrinth(ruleset, players)
-    lab.deal_cards(3)
     print(lab)
 
     turns = 0

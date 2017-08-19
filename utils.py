@@ -45,7 +45,7 @@ def colourise(colour, string):
         output += colour + line + newline
     return output[:-1]
 
-def checked_input(message, check, convert=None):
+def checked_input(message, check, convert=None, default=None):
     if convert is None:
         convert = lambda x: x
     while True:
@@ -55,4 +55,19 @@ def checked_input(message, check, convert=None):
                 return convert(output)
         except ValueError:
             pass
-        print("{} is invalid".format(output))
+
+        if output == "" or output == None:
+            if default is None:
+                print("There is no default value")
+            else :
+                return default
+        else:
+            print("{} is invalid".format(output))
+
+def str_bool(string):
+    string = string.lower()
+    if string == "yes":
+        return True
+    elif string == "no":
+        return False
+    return None

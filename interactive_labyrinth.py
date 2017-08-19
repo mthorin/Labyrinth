@@ -2,7 +2,7 @@
 from labyrinth import *
 from player import *
 from tile import *
-from utils import checked_input
+from utils import checked_input, str_bool
 import utils
 import time
 
@@ -77,7 +77,6 @@ class InteractivePlayer(Player):
         return slide, slide_orientation, path
 
 def main():
-    ruleset = RuleSet()
     utils.enable_colours(True)
 
     # Print title in colours
@@ -87,12 +86,10 @@ def main():
         print(colourise(colours[i % 4], letter), end='')
 
     # Can terminal print colours?
-    colours = checked_input("\nDid the title render correctly? (yes/no)? ",
-                            lambda x: x == "yes" or x == "no",
-                            lambda x: x.lower())
-    if colours == "yes":
+    if checked_input("\nDid the title render correctly? (YES/no)? ",
+                     lambda x: x != None, str_bool, True):
         utils.enable_colours(True)
-    elif colours == "no":
+    else:
         utils.enable_colours(False)
     print("")
 
@@ -113,8 +110,13 @@ def main():
     if num_ai > 0:
         players += [Player(colour) for colour in all_player_colours[num_humans:num_humans + num_ai]]
 
+    # Configure ruleset
+    ruleset = RuleSet()
+    if not checked_input("Use default ruleset (YES/no): ",
+                     lambda x: x != None, str_bool, True):
+        ruleset.configure()
+
     lab = Labyrinth(ruleset, players)
-    lab.deal_cards(3)
     print(lab)
 
     turns = 0

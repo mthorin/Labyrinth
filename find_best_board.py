@@ -18,7 +18,6 @@ def main():
         players = [player.Player(colour) for colour in player.all_player_colours]
 
         lab = labyrinth.Labyrinth(ruleset, players)
-        lab.deal_cards(3)
 
         for p in lab.gameboard.players:
             p.turns = 0
@@ -52,4 +51,4 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print(best_board)
+        print("\n{}".format(best_board))
