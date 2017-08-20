@@ -55,13 +55,15 @@ class PlayerMovement:
             assert(False) # Invalid step
 
         # See if player picks up token
-        token = next_tile.token
-        if token in player.cards:
-            player.cards.remove(token)
+        if len(player.cards) > 0:
+            token = next_tile.token
+            if ((player.ruleset.CARDS_IN_ORDER and token == player.cards[0])
+            or (not player.ruleset.CARDS_IN_ORDER and token in player.cards)):
+                player.cards.remove(token)
 
-            # TODO: Might need to end turn here
-            #if not self.ruleset.MOVE_AFTER_PICKUP:
-            #    return True
+                # TODO: Might need to end turn here
+                #if not self.ruleset.MOVE_AFTER_PICKUP:
+                #    return True
 
         return True
 
@@ -123,7 +125,7 @@ class Player:
                     if player.cards == []:
                         targets = [(player.home_x, player.home_y)]
                     else:
-                        num_cards = len(player.cards) #TODO: 1 if self.ruleset.CARDS_IN_ORDER else len(player.cards)
+                        num_cards = len(player.cards)
                         for i in range(num_cards):
                             card_loc = new_board.find_card(player.cards[i])
                             if card_loc:
@@ -133,12 +135,27 @@ class Player:
                     player_start = (player.x, player.y)
                     best_target_score = math.inf
                     best_target_path = None
-                    for target_x, target_y in targets:
+                    for target_x, target_y in [targets[0]] if self.ruleset.CARDS_IN_ORDER else targets:
                         # Try to calculate the shortest path
                         (end_x, end_y), path = new_board.shortest_path_to_closest((player.x, player.y), (target_x, target_y))
 
                         # Calculate how good the move is
                         score = abs(end_x - target_x) + abs(end_y - target_y)
+
+                        if self.ruleset.CARDS_IN_ORDER and score == 0 and self.ruleset.MOVE_AFTER_PICKUP:
+                            # Made it to the first card, should try to get to the next one
+                            keep_chaining = True
+                            target_index = 1
+                            while keep_chaining and target_index <= len(targets):
+                                (start_x, start_y) = (end_x, end_y)
+                                if target_index < len(targets):
+                                    target_x, target_y = targets[target_index]
+                                else:
+                                    target_x, target_y = (player.home_x, player.home_y)
+                                (end_x, end_y), path2 = new_board.shortest_path_to_closest((start_x, start_y), (target_x, target_y))
+                                path += path2
+                                keep_chaining = end_x == target_x and end_y == target_y
+                                target_index += 1
 
                         # Save if it is a better score
                         if score < best_target_score:
@@ -158,6 +175,10 @@ class Player:
         return self.cards == [] and self.x == self.home_x and self.y == self.home_y
 
     def __str__(self):
-        return colourise(self.colour, "{}({},{},{})".format(self.colour,self.x,self.y,self.cards))
+        if self.ruleset.SEE_ALL_CARDS:
+            cards = self.cards
+        else:
+            cards = len(self.cards)
+        return colourise(self.colour, "{}({},{}) has {} cards".format(self.colour,self.x,self.y,cards))
 
     __repr__ = __str__

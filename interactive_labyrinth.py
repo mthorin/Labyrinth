@@ -16,7 +16,7 @@ class InteractivePlayer(Player):
         if gameboard.last_slide is not None:
             print("Do not choose {}".format(TileMovement.to_str(gameboard.last_slide)))
 
-        print("Your cards are {}".format(self.cards))
+        self.print_cards()
 
         slide = gameboard.last_slide
         while slide == gameboard.last_slide:
@@ -50,8 +50,8 @@ class InteractivePlayer(Player):
         path = []
         running = True
         player = new_board.players[new_board.turn]
-        print("Your cards are {}".format(player.cards))
         while True:
+            player.print_cards()
             direction = checked_input("Move player (w/a/s/d/end): ",
                                       lambda x: x in ["w", "a", "s", "d", "end"],
                                       lambda x: x.lower())
@@ -75,6 +75,14 @@ class InteractivePlayer(Player):
                 print("Cannot move in that direction")
 
         return slide, slide_orientation, path
+
+    def print_cards(self):
+        if len(self.cards) == 0:
+            print("No cards left")
+        elif self.ruleset.CARDS_IN_ORDER:
+            print("You have {} cards, top card is {}".format(len(self.cards), self.cards[0]))
+        else:
+            print("Your cards are {}".format(self.cards))
 
 def main():
     utils.enable_colours(True)

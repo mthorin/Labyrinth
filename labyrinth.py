@@ -7,14 +7,14 @@ from utils import checked_input, str_bool
 
 class RuleSet:
     def __init__(self):
-        self.SEE_ALL_CARDS = False
-        self.CARDS_IN_ORDER = False
-        self.MOVE_BEFORE_TURN = False
-        self.MOVE_AFTER_PICKUP = False
-        self.END_AT_HOME = True
+        self.SEE_ALL_CARDS = True
+        self.CARDS_IN_ORDER = True
+        self.MOVE_BEFORE_TURN = False #TODO
+        self.MOVE_AFTER_PICKUP = True #TODO
+        self.END_AT_HOME = True #TODO
         self.NUMBER_OF_TOKENS = 3
-        self.NUMBER_OF_SLIDES = 1
-        self.MOVE_TILE_LIMIT = 0
+        self.NUMBER_OF_SLIDES = 1 #TODO
+        self.MOVE_TILE_LIMIT = 0 #TODO
 
     def configure(self):
         def request_bool(message, default):
@@ -52,6 +52,10 @@ class Labyrinth:
         num = self.ruleset.NUMBER_OF_TOKENS
         if max_cards < num:
             num = max_cards
+
+        # Give the players the ruleset
+        for p in self.gameboard.players:
+            p.ruleset = ruleset
 
         # Deal the cards
         for i in range(num):
@@ -128,10 +132,7 @@ class Labyrinth:
 
 
     def __str__(self):
-        if self.ruleset.SEE_ALL_CARDS:
-            return "{}\n{}\n{}\n\n".format(self.gameboard, self.gameboard.players, self.gameboard.floating_tile)
-        else:
-            return "{}\n\n{}\n\n".format(self.gameboard, self.gameboard.floating_tile)
+        return "{}\n{}\n{}\n\n".format(self.gameboard, self.gameboard.players, self.gameboard.floating_tile)
 
     __repr__ = __str__
 
