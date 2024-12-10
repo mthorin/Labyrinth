@@ -7,7 +7,7 @@ from utils import checked_input, str_bool
 
 class RuleSet:
     def __init__(self):
-        self.SEE_ALL_CARDS = True
+        self.SEE_ALL_CARDS = False
         self.CARDS_IN_ORDER = True
         self.MOVE_BEFORE_TURN = False #TODO
         self.MOVE_AFTER_PICKUP = True #TODO
@@ -143,13 +143,13 @@ def main():
     players = [Player(colour) for colour in all_player_colours]
 
     lab = Labyrinth(ruleset, players)
-    print(lab)
+    # print(lab)
 
     turns = 0
     while lab.who_won() is None:
         lab.make_turn()
-        print(lab)
-        time.sleep(0.1)
+        # print(lab)
+        # time.sleep(0.1)
         turns += 1
 
     print("Done")
