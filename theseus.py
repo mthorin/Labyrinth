@@ -33,7 +33,7 @@ class Theseus(Player):
         return direction, orientation, path
     
     def _search(self, initial_state, iterations=1000):
-        root = Node(self.network, self.cards, self.colour, initial_state)
+        root = Node(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
             node = self._select(root)
@@ -62,7 +62,7 @@ class Theseus(Player):
 
 
 class Node:
-    def __init__(self, network, cards, colour, state, action, probability=0, parent=None):
+    def __init__(self, network, cards, colour, org_cards, org_colour, state, action, probability=0, parent=None):
         self.state = state
         self.parent = parent
         self.children = []
@@ -72,11 +72,18 @@ class Node:
         self.action = action
         self.cards = cards
         self.colour = colour
+        self.org_cards = org_cards
+        self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
         p, x = self.network(tensor)
         self.p_logits = self._convert_tensor_to_probabilities(p)
-        self.value = x.item()
+        if colour == org_colour:
+            self.value = x.item()
+        else:
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
+            _, x = self.network(new_tensor)
+            self.value = x.item()
 
     def is_fully_expanded(self):
         return len(self.p_logits) <= 0
@@ -102,7 +109,7 @@ class Node:
             # Increment color 
             next_colour = (all_player_colours.index(self.colour) + 1) % len(all_player_colours)
             
-            child_node = Node(self.network, next_cards, next_colour, next_state, action, highest_prob, parent=self)
+            child_node = Node(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, action, highest_prob, parent=self)
             self.children.append(child_node)
             return child_node
         return None
@@ -132,13 +139,44 @@ dynamic_card_list = ["genie", "scarab", "beetle", "rat",
 
 def convert_gameboard_to_tensor(gameboard, cards, colour):
         """Convert game state to tensor for input into network."""
-        state_tensor = torch.zeros(53, 58)
+        def set_tensor_for_tile(tensor, tile, row):
+            rotation_offset = 0
+            index_offset = 0
+
+            path_count = sum([tile.NORTH, tile.SOUTH, tile.EAST, tile.WEST])
+
+            if path_count == 2 and tile.EAST and tile.WEST:
+                rotation_offset = 1
+            else:
+                if tile.token:
+                    index_offset = 6
+                    index_offset += dynamic_card_list.index(tile.token) * 4
+                if path_count == 2:
+                    if tile.EAST and tile.SOUTH:
+                        rotation_offset = 1
+                    if tile.SOUTH and tile.WEST:
+                        rotation_offset = 2
+                    if tile.WEST and tile.NORTH:
+                        rotation_offset = 3
+                else:
+                    if tile.NORTH and tile.EAST and tile.SOUTH:
+                        rotation_offset = 1
+                    if tile.EAST and tile.SOUTH and tile.WEST:
+                        rotation_offset = 2
+                    if tile.SOUTH and tile.WEST and tile.NORTH:
+                        rotation_offset = 3
+
+            tensor[row, 4 + index_offset + rotation_offset] = 1
+
+            return tensor
+
+        state_tensor = torch.zeros(54, 58)
 
         # Set current player
         state_tensor[0, all_player_colours.index(colour)] = 1
 
         # Set card info
-        row = 50
+        row = 51
         for card in cards:
             index = card_list.index(card)
             state_tensor[row, index] = 1
@@ -154,33 +192,9 @@ def convert_gameboard_to_tensor(gameboard, cards, colour):
                 if x in [0, 2, 4, 6] and y in [0, 2, 4, 6]:
                     continue
                 tile = gameboard._board[x][y]
+                state_tensor = set_tensor_for_tile(state_tensor, tile, 1 + x + (7 * y))
 
-                rotation_offset = 0
-                index_offset = 0
-
-                path_count = sum([tile.NORTH, tile.SOUTH, tile.EAST, tile.WEST])
-
-                if path_count == 2 and tile.EAST and tile.WEST:
-                    rotation_offset = 1
-                else:
-                    if tile.token:
-                        index_offset = 6
-                        index_offset += dynamic_card_list.index(tile.token) * 4
-                    if path_count == 2:
-                        if tile.EAST and tile.SOUTH:
-                            rotation_offset = 1
-                        if tile.SOUTH and tile.WEST:
-                            rotation_offset = 2
-                        if tile.WEST and tile.NORTH:
-                            rotation_offset = 3
-                    else:
-                        if tile.NORTH and tile.EAST and tile.SOUTH:
-                            rotation_offset = 1
-                        if tile.EAST and tile.SOUTH and tile.WEST:
-                            rotation_offset = 2
-                        if tile.SOUTH and tile.WEST and tile.NORTH:
-                            rotation_offset = 3
-
-                state_tensor[1 + x + (7 * y), 4 + index_offset + rotation_offset] = 1
+        # free tile
+        state_tensor = set_tensor_for_tile(state_tensor, gameboard.floating_tile, 50)
 
         return state_tensor
