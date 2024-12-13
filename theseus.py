@@ -10,6 +10,8 @@ class Theseus(Player):
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
+        # TODO: Decay exploration_weight after 30 turns?
+
         direction, orientation = self._search(gameboard.clone(), iterations=1000)
 
         tensor = convert_gameboard_to_tensor(gameboard)
@@ -25,6 +27,8 @@ class Theseus(Player):
         
         # TODO Smart Path
         _, path = gameboard.shortest_path_to_closest((player.x, player.y), destination)
+
+        # TODO Return/save gamestate tensor, pi / pi_max
 
         return direction, orientation, path
     

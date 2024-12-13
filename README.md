@@ -7,3 +7,7 @@ Adapted from https://github.com/MichaelOultram/Labyrinth by MichaeklOultram, wit
 `python labyrinth.py` : Runs a simulated game once with a verbose output
 
 `python interactive_labyrinth.py` : Runs a game with human players
+
+## Files added by mthorin
+
+'theseus.py' : Contains the code for the player powered by the Theseus network, including the Monte Carlo Search Tree implementation.
