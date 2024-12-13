@@ -26,7 +26,7 @@ class Theseus(Player):
         player = new_board.players[new_board.turn]
         
         # TODO Smart Path
-        _, path = gameboard.shortest_path_to_closest((player.x, player.y), destination)
+        _, path = new_board.shortest_path_to_closest((player.x, player.y), destination)
 
         # TODO Return/save gamestate tensor, pi / pi_max
 
