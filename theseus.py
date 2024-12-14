@@ -251,68 +251,52 @@ card_list = ["genie", "skull", "sword", "scarab", "beetle", "rat",
             "princess", "book", "crown", "treasure", "candlestick",
             "ghost", "spider", "owl", "map", "ring", "man", "bat"]
 
-dynamic_card_list = ["genie", "scarab", "beetle", "rat", 
-                     "dragonfly", "lizard", "princess", 
-                     "ghost", "spider", "owl", "man", "bat"]
-
 def convert_gameboard_to_tensor(gameboard, cards, colour):
         """Convert game state to tensor for input into network."""
-        def set_tensor_for_tile(tensor, tile, row):
-            rotation_offset = 0
-            index_offset = 0
-
-            path_count = sum([tile.NORTH, tile.SOUTH, tile.EAST, tile.WEST])
-
-            if path_count == 2 and tile.EAST and tile.WEST:
-                rotation_offset = 1
-            else:
-                if tile.token:
-                    index_offset = 6
-                    index_offset += dynamic_card_list.index(tile.token) * 4
-                if path_count == 2:
-                    if tile.EAST and tile.SOUTH:
-                        rotation_offset = 1
-                    if tile.SOUTH and tile.WEST:
-                        rotation_offset = 2
-                    if tile.WEST and tile.NORTH:
-                        rotation_offset = 3
-                else:
-                    if tile.NORTH and tile.EAST and tile.SOUTH:
-                        rotation_offset = 1
-                    if tile.EAST and tile.SOUTH and tile.WEST:
-                        rotation_offset = 2
-                    if tile.SOUTH and tile.WEST and tile.NORTH:
-                        rotation_offset = 3
-
-            tensor[row, 4 + index_offset + rotation_offset] = 1
-
-            return tensor
-
-        state_tensor = torch.zeros(54, 58)
-
-        # Set current player
-        state_tensor[0, all_player_colours.index(colour)] = 1
-
-        # Set card info
-        row = 51
-        for card in cards:
-            index = card_list.index(card)
-            state_tensor[row, index] = 1
-            row += 1
+        def check_tile(tile):
+            north = 0
+            east = 0
+            south = 0
+            west = 0
+            token = 0
+            home = 0
+            if tile.token in cards:
+                token = 1
+            if tile.token == colour + " base":
+                home = 1
+            if tile.NORTH == True:
+                north = 1
+            if tile.EAST == True:
+                east = 1
+            if tile.SOUTH == True:
+                south = 1
+            if tile.WEST == True:
+                west = 1
+            return north, east, south, west, token, home
+            
+        state_tensor = torch.zeros(7, 7, 12) #player location, paths 4, is card, is home
 
         # Set player location information
         for player in gameboard.players:
-            state_tensor[1 + player.x + (player.y * 7), all_player_colours.index(player.colour)] = 1
+            if player.colour == colour:
+                state_tensor[player.x, player.y, 0]
+
+        float_north, float_east, float_south, float_west, float_token, _ = check_tile(gameboard.floating_tile)
 
         # set board info
         for x in range(7):
             for y in range(7):
-                if x in [0, 2, 4, 6] and y in [0, 2, 4, 6]:
-                    continue
-                tile = gameboard._board[x][y]
-                state_tensor = set_tensor_for_tile(state_tensor, tile, 1 + x + (7 * y))
-
-        # free tile
-        state_tensor = set_tensor_for_tile(state_tensor, gameboard.floating_tile, 50)
+                north, east, south, west, token, base = check_tile(gameboard._board[x][y])
+                state_tensor[x, y, 1] = north
+                state_tensor[x, y, 2] = east
+                state_tensor[x, y, 3] = south
+                state_tensor[x, y, 4] = west
+                state_tensor[x, y, 5] = token
+                state_tensor[x, y, 6] = base
+                state_tensor[x, y, 7] = float_north
+                state_tensor[x, y, 8] = float_east
+                state_tensor[x, y, 9] = float_south
+                state_tensor[x, y, 10] = float_west
+                state_tensor[x, y, 11] = float_token
 
         return state_tensor
