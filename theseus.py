@@ -2,47 +2,65 @@ from player import *
 import torch
 
 class Theseus(Player):
-    def __init__(self, colour, network, exploration_weight=0):
+    def __init__(self, colour, network, exploration_weight=0.001, data_bank=None):
         super().__init__(colour)
         self.network = network
         self.exploration_weight = exploration_weight
+        self.turns = 0
+        self.data_bank = data_bank
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
-        # TODO: Decay exploration_weight after 30 turns?
-
-        direction, orientation = self._search(gameboard.clone(), iterations=1000)
+        self.turns += 1
+        if self.exploration_weight != 0.001 and self.turns > 30:
+            self.exploration_weight = 0.001
 
         tensor = convert_gameboard_to_tensor(gameboard)
-        p, _ = self.network(tensor)
 
-        action_index = TileMovement.all_moves().index(direction)
-        orientation_index = [0, 90, 180, 270].index(orientation)
-
-        destination = torch.argmax(p[action_index, orientation_index])
+        # Slide space search
+        pi_max, pi_slide = self._search_slide_space(gameboard.clone(), iterations=1000)
+        direction, orientation = pi_max
 
         new_board = gameboard.slide_tiles(direction, orientation)
         player = new_board.players[new_board.turn]
+
+        # Move space search
+        destination, pi_move = self._search_move_space(new_board.clone(), iterations=1000)
         
         # TODO Smart Path
         _, path = new_board.shortest_path_to_closest((player.x, player.y), destination)
 
-        # TODO Return/save gamestate tensor, pi / pi_max
+        self.data_bank.append(tuple([tensor, pi_slide, pi_move]))
 
         return direction, orientation, path
     
-    def _search(self, initial_state, iterations=1000):
-        root = Node(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
+    def _search_slide_space(self, initial_state, iterations=1000):
+        root = SlideNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
             node = self._select(root)
             reward = node.value
             self._backpropagate(node, reward)
 
+        pi = root.generate_pi()
+
         pi_max = max(root.children, 
                      key=lambda child: child.visits**(1/self.exploration_weight) / (1000 - child.visits)**(1/self.exploration_weight))
-        return pi_max.action
+        return pi_max.action, pi
+    
+    def _search_move_space(self, initial_state, iterations=1000):
+        root = MoveNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
+
+        for _ in range(iterations):
+            node = self._select(root)
+            reward = node.value
+            self._backpropagate(node, reward)
+
+        pi = root.generate_pi()
+
+        pi_max = torch.argmax(pi)
+        return (pi_max % 7, pi_max // 7), pi
 
     def _select(self, node):
         """Select a node to expand."""
@@ -61,8 +79,83 @@ class Theseus(Player):
             node = node.parent
 
 
-class Node:
-    def __init__(self, network, cards, colour, org_cards, org_colour, state, action, probability=0, parent=None):
+class MoveNode:
+    def __init__(self, network, cards, colour, org_cards, org_colour, state, destination=None, probability=0, parent=None):
+        self.state = state
+        self.parent = parent
+        self.children = []
+        self.visits = 0
+        self.probability = probability
+        self.network = network
+        self.destination = destination
+        self.cards = cards
+        self.colour = colour
+        self.org_cards = org_cards
+        self.org_colour = org_colour
+
+        tensor = convert_gameboard_to_tensor(state, cards, colour)
+        _, m, x = self.network(tensor)
+        self.m_logits = self._convert_tensor_to_probabilities(m)
+
+        if colour == org_colour:
+            self.value = x.item()
+        else:
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
+            _, _, x = self.network(new_tensor)
+            self.value = x.item()
+
+    def is_fully_expanded(self):
+        return len(self.p_logits) <= 0
+
+    def best_child(self):
+        """Select the best child using the formula used by AlphaGo Zero."""
+        choices_weights = [
+            (child.value / child.visits) +
+            child.probability / 1 + child.visits
+            for child in self.children
+        ]
+        return self.children[choices_weights.index(max(choices_weights))]
+
+    def expand(self):
+        """Expand the tree by adding a new child node."""
+        highest_prob = max(self.m_logits)
+        action = self.m_logits.pop(highest_prob)
+        if action:
+            next_state = self.state.clone()
+            next_state.players[next_state.turn].x = action[0]
+            next_state.players[next_state.turn].y = action[1]
+
+            # Select random cards for next opponent (same number of cards as self)
+            next_cards = random.sample([item for item in card_list if item not in self.cards], len(self.cards))
+            # Increment color 
+            next_colour = (all_player_colours.index(self.colour) + 1) % len(all_player_colours)
+            
+            child_node = MoveNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
+                                   destination=action, probability=highest_prob, parent=self)
+            self.children.append(child_node)
+            return child_node
+        return None
+    
+    def generate_pi(self, exploration_weight):
+        pi = torch.zeros(7,7)
+
+        for child in self.children:
+            pi[child.action[0], child.action[1]] = child.visits**(1/exploration_weight)
+
+        return pi / pi.sum()
+    
+    def _convert_tensor_to_probabilities(self, logits):
+        """Converts probability distribution of all moves dictionary."""
+
+        probability_dist = {logits[i, j].item(): tuple([i, j])
+                            for i in range(logits.shape[0]) 
+                            for j in range(logits.shape[1])}
+
+        return probability_dist
+    
+
+class SlideNode:
+    def __init__(self, network, cards, colour, org_cards, org_colour, state, action=None, probability=0, parent=None):
         self.state = state
         self.parent = parent
         self.children = []
@@ -76,14 +169,18 @@ class Node:
         self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
-        p, x = self.network(tensor)
+        p, m, x = self.network(tensor)
+
         self.p_logits = self._convert_tensor_to_probabilities(p)
+
         if colour == org_colour:
             self.value = x.item()
         else:
             new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
-            _, x = self.network(new_tensor)
+            _, _, x = self.network(new_tensor)
             self.value = x.item()
+
+        self.destination = torch.argmax(m)
 
     def is_fully_expanded(self):
         return len(self.p_logits) <= 0
@@ -103,27 +200,42 @@ class Node:
         action = self.p_logits.pop(highest_prob)
         if action:
             next_state = self.state.slide_tiles(action[0], action[1])
+            next_state.players[next_state.turn].x = self.destination % 7
+            next_state.players[next_state.turn].y = self.destination // 7
 
             # Select random cards for next opponent (same number of cards as self)
             next_cards = random.sample([item for item in card_list if item not in self.cards], len(self.cards))
             # Increment color 
             next_colour = (all_player_colours.index(self.colour) + 1) % len(all_player_colours)
             
-            child_node = Node(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, action, highest_prob, parent=self)
+            child_node = SlideNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
+                                   action=action, probability=highest_prob, parent=self)
             self.children.append(child_node)
             return child_node
         return None
     
+    def generate_pi(self, exploration_weight):
+        pi = torch.zeros(12,4)
+
+        for child in self.children:
+            actions = TileMovement.all_moves()
+            orientations = [0, 90, 180, 270]
+
+            direction_index = actions.index(child.action[0])
+            orientation_index = orientations.index(child.action[1])
+
+            pi[direction_index, orientation_index] = child.visits**(1/exploration_weight)
+
+        return pi / pi.sum()
+    
     def _convert_tensor_to_probabilities(self, logits):
         """Converts probability distribution of all moves dictionary ."""
-        combined_probs = torch.sum(logits, dim=2)
-
         actions = TileMovement.all_moves()
         orientations = [0, 90, 180, 270]
 
-        probability_dist = {combined_probs[i, j].item(): tuple([actions[i], orientations[j]]) 
-                            for i in range(combined_probs.shape[0]) 
-                            for j in range(combined_probs.shape[1])}
+        probability_dist = {logits[i, j].item(): tuple([actions[i], orientations[j]]) 
+                            for i in range(logits.shape[0]) 
+                            for j in range(logits.shape[1])}
 
         return probability_dist
     
