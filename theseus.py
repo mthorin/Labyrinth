@@ -45,8 +45,14 @@ class Theseus(Player):
 
         pi = root.generate_pi()
 
-        pi_max = max(root.children, 
-                     key=lambda child: child.visits**(1/self.exploration_weight) / (1000 - child.visits)**(1/self.exploration_weight))
+        sorted_children = sorted(
+                            root.children, 
+                            key=lambda child: child.visits**(1/self.exploration_weight) / (1000 - child.visits)**(1/self.exploration_weight),
+                            reverse=True  # Sort in descending order
+                        )
+        pi_max = sorted_children[0]
+        if pi_max.action[0] == initial_state.last_slide:
+            pi_max = sorted_children[1]
         return pi_max.action, pi
     
     def _search_move_space(self, initial_state, iterations=1000):
@@ -137,19 +143,19 @@ class MoveNode:
         return None
     
     def generate_pi(self, exploration_weight):
-        pi = torch.zeros(7,7)
+        pi = torch.zeros(49)
 
         for child in self.children:
-            pi[child.action[0], child.action[1]] = child.visits**(1/exploration_weight)
+            pi[child.action[0] + (7 * child.action[1])] = child.visits**(1/exploration_weight)
 
         return pi / pi.sum()
     
     def _convert_tensor_to_probabilities(self, logits):
         """Converts probability distribution of all moves dictionary."""
 
-        probability_dist = {logits[i, j].item(): tuple([i, j])
-                            for i in range(logits.shape[0]) 
-                            for j in range(logits.shape[1])}
+        probability_dist = {logits[i + (7 * j)].item(): tuple([i, j])
+                            for i in range(7) 
+                            for j in range(7)}
 
         return probability_dist
     
@@ -215,7 +221,7 @@ class SlideNode:
         return None
     
     def generate_pi(self, exploration_weight):
-        pi = torch.zeros(12,4)
+        pi = torch.zeros(48)
 
         for child in self.children:
             actions = TileMovement.all_moves()
@@ -224,18 +230,18 @@ class SlideNode:
             direction_index = actions.index(child.action[0])
             orientation_index = orientations.index(child.action[1])
 
-            pi[direction_index, orientation_index] = child.visits**(1/exploration_weight)
+            pi[direction_index + (orientation_index * 12)] = child.visits**(1/exploration_weight)
 
         return pi / pi.sum()
     
     def _convert_tensor_to_probabilities(self, logits):
-        """Converts probability distribution of all moves dictionary ."""
+        """Converts probability distribution of all moves dictionary."""
         actions = TileMovement.all_moves()
         orientations = [0, 90, 180, 270]
 
-        probability_dist = {logits[i, j].item(): tuple([actions[i], orientations[j]]) 
-                            for i in range(logits.shape[0]) 
-                            for j in range(logits.shape[1])}
+        probability_dist = {logits[i + (j * 12)].item(): tuple([actions[i], orientations[j]]) 
+                            for i in range(12) 
+                            for j in range(4)}
 
         return probability_dist
     
