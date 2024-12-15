@@ -16,20 +16,19 @@ class Theseus(Player):
         if self.exploration_weight != 0.001 and self.turns > 30:
             self.exploration_weight = 0.001
 
-        tensor = convert_gameboard_to_tensor(gameboard)
+        tensor = convert_gameboard_to_tensor(gameboard, self.cards, self.colour)
 
         # Slide space search
         pi_max, pi_slide = self._search_slide_space(gameboard.clone(), iterations=1000)
         direction, orientation = pi_max
 
         new_board = gameboard.slide_tiles(direction, orientation)
-        player = new_board.players[new_board.turn]
 
         # Move space search
         destination, pi_move = self._search_move_space(new_board.clone(), iterations=1000)
         
-        # TODO Smart Path
-        _, path = new_board.shortest_path_to_closest((player.x, player.y), destination)
+        # Smart Path
+        path = self._smart_path(destination, new_board)
 
         self.data_bank.append(tuple([tensor, pi_slide, pi_move]))
 
@@ -39,11 +38,13 @@ class Theseus(Player):
         root = SlideNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
-            node = self._select(root)
+            node = None
+            while not node:
+                node = self._select(root)
             reward = node.value
             self._backpropagate(node, reward)
 
-        pi = root.generate_pi()
+        pi = root.generate_pi(self.exploration_weight)
 
         sorted_children = sorted(
                             root.children, 
@@ -59,13 +60,15 @@ class Theseus(Player):
         root = MoveNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
-            node = self._select(root)
+            node = None
+            while not node:
+                node = self._select(root)
             reward = node.value
             self._backpropagate(node, reward)
 
-        pi = root.generate_pi()
+        pi = root.generate_pi(self.exploration_weight)
 
-        pi_max = torch.argmax(pi)
+        pi_max = torch.argmax(pi).item()
         return (pi_max % 7, pi_max // 7), pi
 
     def _select(self, node):
@@ -83,6 +86,52 @@ class Theseus(Player):
             node.visits += 1
             node.value += reward
             node = node.parent
+
+    def _smart_path(self, destination, new_board):
+
+        player = new_board.players[new_board.turn]
+
+        targets = []
+        if player.cards == []:
+            targets = [(player.home_x, player.home_y)]
+        else:
+            num_cards = len(player.cards)
+            for i in range(num_cards):
+                card_loc = new_board.find_card(player.cards[i])
+                if card_loc:
+                    targets.append(card_loc)
+        
+        player_start = (player.x, player.y)
+        target_x, target_y = targets[0]
+        # Try to calculate the shortest path to first card
+        (end_x, end_y), path = new_board.shortest_path_to_closest(player_start, targets[0])
+
+        # Calculate how good the move is
+        score = abs(end_x - target_x) + abs(end_y - target_y)
+
+        if score == 0:
+            if player.cards == []:
+                return path
+            # Made it to the first card, should try to get to the next one
+            keep_chaining = True
+            target_index = 1
+            while keep_chaining and target_index <= len(targets):
+                (start_x, start_y) = (end_x, end_y)
+                if target_index < len(targets):
+                    target_x, target_y = targets[target_index]
+                else:
+                    target_x, target_y = (player.home_x, player.home_y)
+                (end_x, end_y), path2 = new_board.shortest_path_to_closest((start_x, start_y), (target_x, target_y))
+                path += path2
+                keep_chaining = end_x == target_x and end_y == target_y
+                target_index += 1
+            if keep_chaining:
+                return path
+            
+        _, path2 = new_board.shortest_path_to_closest((end_x, end_y), destination)
+        path += path2
+
+        return path
 
 
 class MoveNode:
@@ -111,7 +160,7 @@ class MoveNode:
             self.value = y.item()
 
     def is_fully_expanded(self):
-        return len(self.p_logits) <= 0
+        return len(self.m_logits) <= 0
 
     def best_child(self):
         """Select the best child using the formula used by AlphaGo Zero."""
@@ -134,7 +183,7 @@ class MoveNode:
             # Select random cards for next opponent (same number of cards as self)
             next_cards = random.sample([item for item in card_list if item not in self.cards], len(self.cards))
             # Increment color 
-            next_colour = (all_player_colours.index(self.colour) + 1) % len(all_player_colours)
+            next_colour = all_player_colours[(all_player_colours.index(self.colour) + 1) % len(all_player_colours)]
             
             child_node = MoveNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
                                    destination=action, probability=highest_prob, parent=self)
@@ -146,7 +195,7 @@ class MoveNode:
         pi = torch.zeros(49)
 
         for child in self.children:
-            pi[child.action[0] + (7 * child.action[1])] = child.visits**(1/exploration_weight)
+            pi[child.destination[0] + (7 * child.destination[1])] = child.visits**(1/exploration_weight)
 
         return pi / pi.sum()
     
@@ -205,6 +254,8 @@ class SlideNode:
         highest_prob = max(self.p_logits)
         action = self.p_logits.pop(highest_prob)
         if action:
+            if self.state.last_slide == action[0]:
+                return None
             next_state = self.state.slide_tiles(action[0], action[1])
             next_state.players[next_state.turn].x = self.destination % 7
             next_state.players[next_state.turn].y = self.destination // 7
@@ -212,7 +263,7 @@ class SlideNode:
             # Select random cards for next opponent (same number of cards as self)
             next_cards = random.sample([item for item in card_list if item not in self.cards], len(self.cards))
             # Increment color 
-            next_colour = (all_player_colours.index(self.colour) + 1) % len(all_player_colours)
+            next_colour = all_player_colours[(all_player_colours.index(self.colour) + 1) % len(all_player_colours)]
             
             child_node = SlideNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
                                    action=action, probability=highest_prob, parent=self)
@@ -260,9 +311,10 @@ def convert_gameboard_to_tensor(gameboard, cards, colour):
             west = 0
             token = 0
             home = 0
-            if tile.token in cards:
-                token = 1
-            if tile.token == colour + " base":
+            if cards != []:
+                if tile.token is not None and tile.token in cards[0]:
+                    token = 1
+            if tile.token == str(colour) + " base":
                 home = 1
             if tile.NORTH == True:
                 north = 1
