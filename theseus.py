@@ -100,15 +100,15 @@ class MoveNode:
         self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
-        _, m, x = self.network(tensor)
+        _, m, y = self.network(tensor, slide=False)
         self.m_logits = self._convert_tensor_to_probabilities(m)
 
         if colour == org_colour:
-            self.value = x.item()
+            self.value = y.item()
         else:
             new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
-            _, _, x = self.network(new_tensor)
-            self.value = x.item()
+            _, _, y = self.network(new_tensor, slide=False, move=False)
+            self.value = y.item()
 
     def is_fully_expanded(self):
         return len(self.p_logits) <= 0
@@ -175,16 +175,16 @@ class SlideNode:
         self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
-        p, m, x = self.network(tensor)
+        p, m, y = self.network(tensor)
 
         self.p_logits = self._convert_tensor_to_probabilities(p)
 
         if colour == org_colour:
-            self.value = x.item()
+            self.value = y.item()
         else:
             new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
-            _, _, x = self.network(new_tensor)
-            self.value = x.item()
+            _, _, y = self.network(new_tensor, slide=False, move=False)
+            self.value = y.item()
 
         self.destination = torch.argmax(m)
 
@@ -274,12 +274,12 @@ def convert_gameboard_to_tensor(gameboard, cards, colour):
                 west = 1
             return north, east, south, west, token, home
             
-        state_tensor = torch.zeros(7, 7, 12) #player location, paths 4, is card, is home
+        state_tensor = torch.zeros(12, 7, 7) #player location, paths 4, is card, is home
 
         # Set player location information
         for player in gameboard.players:
             if player.colour == colour:
-                state_tensor[player.x, player.y, 0]
+                state_tensor[0, player.x, player.y]
 
         float_north, float_east, float_south, float_west, float_token, _ = check_tile(gameboard.floating_tile)
 
@@ -287,16 +287,16 @@ def convert_gameboard_to_tensor(gameboard, cards, colour):
         for x in range(7):
             for y in range(7):
                 north, east, south, west, token, base = check_tile(gameboard._board[x][y])
-                state_tensor[x, y, 1] = north
-                state_tensor[x, y, 2] = east
-                state_tensor[x, y, 3] = south
-                state_tensor[x, y, 4] = west
-                state_tensor[x, y, 5] = token
-                state_tensor[x, y, 6] = base
-                state_tensor[x, y, 7] = float_north
-                state_tensor[x, y, 8] = float_east
-                state_tensor[x, y, 9] = float_south
-                state_tensor[x, y, 10] = float_west
-                state_tensor[x, y, 11] = float_token
+                state_tensor[1, x, y] = north
+                state_tensor[2, x, y] = east
+                state_tensor[3, x, y] = south
+                state_tensor[4, x, y] = west
+                state_tensor[5, x, y] = token
+                state_tensor[6, x, y] = base
+                state_tensor[7, x, y] = float_north
+                state_tensor[8, x, y] = float_east
+                state_tensor[9, x, y] = float_south
+                state_tensor[10, x, y] = float_west
+                state_tensor[11, x, y] = float_token
 
         return state_tensor
