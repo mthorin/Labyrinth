@@ -3,9 +3,9 @@ import copy
 import random
 from itertools import product
 
-from tile import *
-from player import all_player_colours, Player, PlayerMovement
-from utils import PriorityQueue
+from Labyrinth.tile import *
+from Labyrinth.player import all_player_colours, Player, PlayerMovement
+from Labyrinth.utils import PriorityQueue
 
 all_tokens = set(["genie", "skull", "sword", "scarab", "beetle", "rat",
                            "dragonfly", "gold", "keys", "gem", "lizard", "helmet",

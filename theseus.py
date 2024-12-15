@@ -1,4 +1,4 @@
-from player import *
+from Labyrinth.player import *
 import torch
 
 class Theseus(Player):

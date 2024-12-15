@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from utils import colourise
+from Labyrinth.utils import colourise
 import random
 import math
-import utils
+import Labyrinth.utils as utils
 
 global tile_id
 tile_id = 0

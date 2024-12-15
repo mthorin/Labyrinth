@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from tile import TileMovement
-from utils import colourise
+from Labyrinth.tile import TileMovement
+from Labyrinth.utils import colourise
 import random, math
 
 all_player_colours = ["red", "blue", "green", "yellow"]

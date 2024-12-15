@@ -1,9 +1,9 @@
 #!/usr/bin/python
-from board import *
-from player import *
+from Labyrinth.board import *
+from Labyrinth.player import *
 import time, random, copy
-import utils
-from utils import checked_input, str_bool
+import Labyrinth.utils as utils
+from Labyrinth.utils import checked_input, str_bool
 
 class RuleSet:
     def __init__(self):
