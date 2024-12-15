@@ -2,7 +2,7 @@ from Labyrinth.player import *
 import torch
 
 class Theseus(Player):
-    def __init__(self, colour, network, exploration_weight=0.001, data_bank=None):
+    def __init__(self, colour, network, exploration_weight=0.01, data_bank=None):
         super().__init__(colour)
         self.network = network
         self.exploration_weight = exploration_weight
@@ -13,8 +13,8 @@ class Theseus(Player):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
         self.turns += 1
-        if self.exploration_weight != 0.001 and self.turns > 30:
-            self.exploration_weight = 0.001
+        if self.exploration_weight != 0.01 and self.turns > 30:
+            self.exploration_weight = 0.01
 
         tensor = convert_gameboard_to_tensor(gameboard, self.cards, self.colour)
 
@@ -153,14 +153,14 @@ class MoveNode:
         self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
-        _, m, y = self.network(tensor, slide=False)
-        self.m_logits = self._convert_tensor_to_probabilities(m)
+        _, m, y = self.network(tensor.unsqueeze(0), slide=False)
+        self.m_logits = self._convert_tensor_to_probabilities(m.squeeze(0))
 
         if colour == org_colour:
             self.value = y.item()
         else:
             new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
-            _, _, y = self.network(new_tensor, slide=False, move=False)
+            _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
     def is_fully_expanded(self):
@@ -228,18 +228,18 @@ class SlideNode:
         self.org_colour = org_colour
 
         tensor = convert_gameboard_to_tensor(state, cards, colour)
-        p, m, y = self.network(tensor)
+        p, m, y = self.network(tensor.unsqueeze(0))
 
-        self.p_logits = self._convert_tensor_to_probabilities(p)
+        self.p_logits = self._convert_tensor_to_probabilities(p.squeeze(0))
 
         if colour == org_colour:
             self.value = y.item()
         else:
             new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
-            _, _, y = self.network(new_tensor, slide=False, move=False)
+            _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
-        self.destination = torch.argmax(m)
+        self.destination = torch.argmax(m.squeeze(0))
 
     def is_fully_expanded(self):
         return len(self.p_logits) <= 0
