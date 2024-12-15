@@ -335,7 +335,7 @@ def convert_gameboard_to_tensor(gameboard, cards, colour):
         # Set player location information
         for player in gameboard.players:
             if player.colour == colour:
-                state_tensor[0, player.x, player.y]
+                state_tensor[0, player.x, player.y] = 1
 
         float_north, float_east, float_south, float_west, float_token, _ = check_tile(gameboard.floating_tile)
 
