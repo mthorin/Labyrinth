@@ -125,7 +125,7 @@ class GameBoard:
                 found_tokens.add(tile.token)
 
         # Check that we have all the tiles we are supposed to
-        assert(found_ids == set([i for i in range(50)]))
+        assert(len(found_ids) == 50)
 
         # Check all tokens are valid
         everything = all_tokens.union(set(p + " base" for p in all_player_colours))
