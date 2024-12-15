@@ -90,6 +90,7 @@ class Theseus(Player):
     def _smart_path(self, destination, new_board):
 
         player = new_board.players[new_board.turn]
+        player_start = (player.x, player.y)
 
         targets = []
         if player.cards == []:
@@ -101,7 +102,10 @@ class Theseus(Player):
                 if card_loc:
                     targets.append(card_loc)
         
-        player_start = (player.x, player.y)
+        if len(targets) == 0:
+            _, path = new_board.shortest_path_to_closest((end_x, end_y), destination)
+            return path
+
         target_x, target_y = targets[0]
         # Try to calculate the shortest path to first card
         (end_x, end_y), path = new_board.shortest_path_to_closest(player_start, targets[0])

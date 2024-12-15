@@ -131,6 +131,8 @@ class Player:
                             if card_loc:
                                 targets.append(card_loc)
 
+                    if len(targets) == 0:
+                        continue
                     # Find best path by checking each target in turn
                     player_start = (player.x, player.y)
                     best_target_score = math.inf
