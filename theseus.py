@@ -30,7 +30,7 @@ class Theseus(Player):
         # Smart Path
         path = self._smart_path(destination, new_board)
 
-        self.data_bank.append(tuple([tensor, pi_slide, pi_move]))
+        self.data_bank(tuple([tensor, pi_slide, pi_move]))
 
         return direction, orientation, path
     
