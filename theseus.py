@@ -2,12 +2,13 @@ from Labyrinth.player import *
 import torch
 
 class Theseus(Player):
-    def __init__(self, colour, network, exploration_weight=0.1, data_bank=[]):
+    def __init__(self, colour, network, device, exploration_weight=0.1, data_bank=[]):
         super().__init__(colour)
         self.network = network
         self.exploration_weight = exploration_weight
         self.turns = 0
         self.data_bank = data_bank
+        self.device = device
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
@@ -36,7 +37,7 @@ class Theseus(Player):
         return direction, orientation, path
     
     def _search_slide_space(self, initial_state, iterations=1000):
-        root = SlideNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
+        root = SlideNode(self.network, self.device, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
             node = None
@@ -58,7 +59,7 @@ class Theseus(Player):
         return pi_max.action, pi
     
     def _search_move_space(self, initial_state, iterations=1000):
-        root = MoveNode(self.network, self.cards, self.colour, self.cards, self.colour, initial_state)
+        root = MoveNode(self.network, self.device, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
             node = None
@@ -140,27 +141,28 @@ class Theseus(Player):
 
 
 class MoveNode:
-    def __init__(self, network, cards, colour, org_cards, org_colour, state, destination=None, probability=0, parent=None):
+    def __init__(self, network, device, cards, colour, org_cards, org_colour, state, destination=None, probability=0, parent=None):
         self.state = state
         self.parent = parent
         self.children = []
         self.visits = 0
         self.probability = probability
         self.network = network
+        self.device = device
         self.destination = destination
         self.cards = cards
         self.colour = colour
         self.org_cards = org_cards
         self.org_colour = org_colour
 
-        tensor = convert_gameboard_to_tensor(state, cards, colour)
+        tensor = convert_gameboard_to_tensor(state, cards, colour).to(device)
         _, m, y = self.network(tensor.unsqueeze(0), slide=False)
         self.m_logits = self._convert_tensor_to_probabilities(m.squeeze(0))
 
         if colour == org_colour:
             self.value = y.item()
         else:
-            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour).to(device)
             _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
@@ -190,7 +192,7 @@ class MoveNode:
             # Increment color 
             next_colour = all_player_colours[(all_player_colours.index(self.colour) + 1) % len(all_player_colours)]
             
-            child_node = MoveNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
+            child_node = MoveNode(self.network, self.device, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
                                    destination=action, probability=highest_prob, parent=self)
             self.children.append(child_node)
             return child_node
@@ -215,20 +217,21 @@ class MoveNode:
     
 
 class SlideNode:
-    def __init__(self, network, cards, colour, org_cards, org_colour, state, action=None, probability=0, parent=None):
+    def __init__(self, network, device, cards, colour, org_cards, org_colour, state, action=None, probability=0, parent=None):
         self.state = state
         self.parent = parent
         self.children = []
         self.visits = 0
         self.probability = probability
         self.network = network
+        self.device = device
         self.action = action
         self.cards = cards
         self.colour = colour
         self.org_cards = org_cards
         self.org_colour = org_colour
 
-        tensor = convert_gameboard_to_tensor(state, cards, colour)
+        tensor = convert_gameboard_to_tensor(state, cards, colour).to(device)
         p, m, y = self.network(tensor.unsqueeze(0))
 
         self.p_logits = self._convert_tensor_to_probabilities(p.squeeze(0))
@@ -236,7 +239,7 @@ class SlideNode:
         if colour == org_colour:
             self.value = y.item()
         else:
-            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour)
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour).to(device)
             _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
@@ -270,7 +273,7 @@ class SlideNode:
             # Increment color 
             next_colour = all_player_colours[(all_player_colours.index(self.colour) + 1) % len(all_player_colours)]
             
-            child_node = SlideNode(self.network, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
+            child_node = SlideNode(self.network, self.device, next_cards, next_colour, self.org_cards, self.org_colour, next_state, 
                                    action=action, probability=highest_prob, parent=self)
             self.children.append(child_node)
             return child_node
