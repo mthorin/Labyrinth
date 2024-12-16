@@ -2,7 +2,7 @@ from Labyrinth.player import *
 import torch
 
 class Theseus(Player):
-    def __init__(self, colour, network, exploration_weight=0.01, data_bank=None):
+    def __init__(self, colour, network, exploration_weight=0.1, data_bank=[]):
         super().__init__(colour)
         self.network = network
         self.exploration_weight = exploration_weight
@@ -13,8 +13,8 @@ class Theseus(Player):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
 
         self.turns += 1
-        if self.exploration_weight != 0.01 and self.turns > 30:
-            self.exploration_weight = 0.01
+        if self.exploration_weight != 0.1 and self.turns > 30:
+            self.exploration_weight = 0.1
 
         tensor = convert_gameboard_to_tensor(gameboard, self.cards, self.colour)
 
@@ -30,7 +30,8 @@ class Theseus(Player):
         # Smart Path
         path = self._smart_path(destination, new_board)
 
-        self.data_bank(tuple([tensor, pi_slide, pi_move]))
+        if self.data_bank:
+            self.data_bank(tuple([tensor, pi_slide, pi_move]))
 
         return direction, orientation, path
     
