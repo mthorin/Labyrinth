@@ -2,13 +2,14 @@ from Labyrinth.player import *
 import torch
 
 class Theseus(Player):
-    def __init__(self, colour, network, device, exploration_weight=0.1, data_bank=[]):
+    def __init__(self, colour, network, device, exploration_weight=0.1, data_bank=[], iterations=1000):
         super().__init__(colour)
         self.network = network
         self.exploration_weight = exploration_weight
         self.turns = 0
         self.data_bank = data_bank
         self.device = device
+        self.iterations = iterations
 
     def decide_move(self, gameboard):
         assert(all(hasattr(self, a) for a in ["home_x", "home_y", "x", "y"]))
@@ -20,13 +21,13 @@ class Theseus(Player):
         tensor = convert_gameboard_to_tensor(gameboard, self.cards, self.colour)
 
         # Slide space search
-        pi_max, pi_slide = self._search_slide_space(gameboard.clone(), iterations=1000)
+        pi_max, pi_slide = self._search_slide_space(gameboard.clone(), self.iterations)
         direction, orientation = pi_max
 
         new_board = gameboard.slide_tiles(direction, orientation)
 
         # Move space search
-        destination, pi_move = self._search_move_space(new_board.clone(), iterations=1000)
+        destination, pi_move = self._search_move_space(new_board.clone(), self.iterations)
         
         # Smart Path
         path = self._smart_path(destination, new_board)
@@ -36,7 +37,7 @@ class Theseus(Player):
 
         return direction, orientation, path
     
-    def _search_slide_space(self, initial_state, iterations=1000):
+    def _search_slide_space(self, initial_state, iterations):
         root = SlideNode(self.network, self.device, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
@@ -58,7 +59,7 @@ class Theseus(Player):
             pi_max = sorted_children[1]
         return pi_max.action, pi
     
-    def _search_move_space(self, initial_state, iterations=1000):
+    def _search_move_space(self, initial_state, iterations):
         root = MoveNode(self.network, self.device, self.cards, self.colour, self.cards, self.colour, initial_state)
 
         for _ in range(iterations):
