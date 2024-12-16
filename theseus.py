@@ -156,14 +156,14 @@ class MoveNode:
         self.org_cards = org_cards
         self.org_colour = org_colour
 
-        tensor = convert_gameboard_to_tensor(state, cards, colour).to(device)
+        tensor = convert_gameboard_to_tensor(state, cards, colour) # .to(device)
         _, m, y = self.network(tensor.unsqueeze(0), slide=False)
         self.m_logits = self._convert_tensor_to_probabilities(m.squeeze(0))
 
         if colour == org_colour:
             self.value = y.item()
         else:
-            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour).to(device)
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour) # .to(device)
             _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
@@ -232,7 +232,7 @@ class SlideNode:
         self.org_cards = org_cards
         self.org_colour = org_colour
 
-        tensor = convert_gameboard_to_tensor(state, cards, colour).to(device)
+        tensor = convert_gameboard_to_tensor(state, cards, colour) # .to(device)
         p, m, y = self.network(tensor.unsqueeze(0))
 
         self.p_logits = self._convert_tensor_to_probabilities(p.squeeze(0))
@@ -240,7 +240,7 @@ class SlideNode:
         if colour == org_colour:
             self.value = y.item()
         else:
-            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour).to(device)
+            new_tensor = convert_gameboard_to_tensor(state, org_cards, org_colour) # .to(device)
             _, _, y = self.network(new_tensor.unsqueeze(0), slide=False, move=False)
             self.value = y.item()
 
