@@ -10,4 +10,4 @@ Adapted from https://github.com/MichaelOultram/Labyrinth by MichaeklOultram, wit
 
 ## Files added by mthorin
 
-'theseus.py' : Contains the code for the player powered by the Theseus network, including the Monte Carlo Search Tree implementation.
+`theseus.py` : Contains the code for the player powered by the Theseus network, including the Monte Carlo Search Tree implementation.
